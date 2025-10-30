@@ -19,7 +19,7 @@ Plan project backlogs, manage tasks, and organize work units with Agiflow MCP in
 - Duplicate prevention and quality validation
 - Integration with Architect MCP for design pattern compliance
 
-[View Plugin Documentation →](./agiflow-plugin/README.md)
+[View Plugin Documentation →](./project-management/README.md)
 
 ## Quick Start
 
@@ -335,9 +335,7 @@ After modifying plugin files:
 
 ```
 agiflow-marketplace/
-├── .claude-plugin/
-│   └── marketplace.json          # Marketplace manifest
-├── agiflow-plugin/                # Main plugin
+├── project-management/                # Main plugin
 │   ├── .claude-plugin/
 │   │   └── plugin.json           # Plugin metadata
 │   ├── commands/

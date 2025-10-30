@@ -1,5 +1,5 @@
 {
-  "name": "agiflow",
+  "name": "project-management",
   "description": "Agiflow project management plugin for Claude Code - plan backlogs, manage tasks, and organize work units",
   "version": "1.0.0",
   "author": {
@@ -9,6 +9,6 @@
   "homepage": "https://agiflow.io",
   "repository": {
     "type": "git",
-    "url": "https://github.com/agiflow/claude-code-plugin"
+    "url": "https://github.com/agiflow/platform-tools"
   }
 }

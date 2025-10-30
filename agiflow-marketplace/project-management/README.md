@@ -1,4 +1,4 @@
-# Agiflow Plugin for Claude Code
+# Agiflow Project Management Plugin for Claude Code
 
 Official Agiflow plugin for Claude Code that enables intelligent project planning, task management, and work unit organization through the Agiflow MCP integration.
 

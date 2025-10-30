@@ -19,9 +19,19 @@ import { TemplateService } from '../../src/services/TemplateService';
 describe('TemplateService', () => {
   const service = new TemplateService();
 
-  it('should process data successfully', async () => {
-    const result = await service.processData('test');
+  it('should render template string with variables', () => {
+    const template = 'Hello {{ name }}!';
+    const variables = { name: 'World' };
+    const result = service.renderString(template, variables);
 
-    expect(result).toBeDefined();
+    expect(result).toBe('Hello World!');
+  });
+
+  it('should detect template variables in content', () => {
+    const contentWithVars = 'Hello {{ name }}!';
+    const contentWithoutVars = 'Hello World!';
+
+    expect(service.containsTemplateVariables(contentWithVars)).toBe(true);
+    expect(service.containsTemplateVariables(contentWithoutVars)).toBe(false);
   });
 });

@@ -6,8 +6,8 @@
   "description": "Official Agiflow plugins for Claude Code",
   "plugins": [
     {
-      "name": "agiflow",
-      "source": "./agiflow-plugin",
+      "name": "project-management",
+      "source": "./agiflow-marketplace/project-management",
       "description": "Plan project backlogs, manage tasks, and organize work units with Agiflow MCP integration"
     }
   ]

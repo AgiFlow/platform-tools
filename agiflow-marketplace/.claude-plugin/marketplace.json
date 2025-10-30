@@ -1,0 +1,14 @@
+{
+  "name": "agiflow-marketplace",
+  "owner": {
+    "name": "Agiflow Team"
+  },
+  "description": "Official Agiflow plugins for Claude Code",
+  "plugins": [
+    {
+      "name": "agiflow",
+      "source": "./agiflow-plugin",
+      "description": "Plan project backlogs, manage tasks, and organize work units with Agiflow MCP integration"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "powertool",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/powertool",
+  "projectType": "application",
+  "sourceTemplate": "typescript-mcp-package",
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "biome check packages/powertool"
+      }
+    },
+    "lint:fix": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "biome check --write packages/powertool"
+      }
+    }
+  }
+}

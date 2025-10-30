@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "agiflow-proxy": {
+      "type": "stdio",
+      "disabled": false,
+      "command": "bun",
+      "args": [
+        "./packages/powertool/src/cli.ts",
+        "mcp-serve",
+        "--config-file",
+        "./mcp-proxy-config.json"
+      ]
+    },
+    "dev-tools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"],
+      "env": {}
+    },
+    "scaffold-mcp": {
+      "type": "stdio",
+      "disabled": false,
+      "command": "npx",
+      "args": ["-y", "@agiflowai/scaffold-mcp", "mcp-serve"]
+    },
+    "architect-mcp": {
+      "type": "stdio",
+      "disabled": false,
+      "command": "npx",
+      "args": ["-y", "@agiflowai/architect-mcp", "mcp-serve"]
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "platform-tools-internal",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "nx run-many -t build",
+    "test": "nx run-many -t test",
+    "typecheck": "nx run-many -t typecheck",
+    "lint": "nx run-many -t lint",
+    "lint:fix": "nx run-many -t lint:fix",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "commit": "commit",
+    "release": "nx release",
+    "release:dry-run": "nx release --dry-run",
+    "prepare": "husky"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "packageManager": "pnpm@10.15.1",
+  "dependencies": {
+    "@nx/js": "21.6.3",
+    "@nx/vite": "21.6.3",
+    "@nx/workspace": "21.6.3",
+    "nx": "21.6.3",
+    "pnpm": "10.18.0",
+    "typescript": "5.9.2",
+    "vitest": "^2.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.5",
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-nx-scopes": "^20.0.0",
+    "@commitlint/prompt-cli": "^20.1.0",
+    "husky": "^9.1.7",
+    "nx": "22.0.1"
+  }
+}

@@ -7,8 +7,5 @@
   },
   "keywords": ["agiflow", "project-management", "planning", "tasks", "work-units"],
   "homepage": "https://agiflow.io",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/agiflow/platform-tools"
-  }
+  "repository": "https://github.com/agiflow/platform-tools"
 }

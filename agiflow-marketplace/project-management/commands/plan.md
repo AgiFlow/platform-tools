@@ -1,7 +1,7 @@
 ---
-name: Agiflow: Plan
+name: agiflow-plan
 description: Plan project backlogs using MCP tools to convert requirements to tasks and work units.
-category: Agiflow
+category: Project Management
 tags: [agiflow, task, planning]
 ---
 

@@ -1,7 +1,7 @@
 ---
-name: Agiflow: Task
+name: agiflow-task
 description: Implement tasks sequentially and track progress using MCP tools.
-category: Agiflow
+category: Project Management
 tags: [agiflow, task, implementation]
 ---
 

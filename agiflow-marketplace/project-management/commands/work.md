@@ -1,7 +1,7 @@
 ---
-name: Agiflow: Work Unit
+name: agiflow-work
 description: Execute a work unit (feature/epic) by implementing all its tasks sequentially using MCP tools.
-category: Agiflow
+category: Project Management
 tags: [agiflow, work-unit, feature, epic, coordination]
 ---
 

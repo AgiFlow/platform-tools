@@ -1,7 +1,7 @@
 ---
-name: Agiflow: Complete
+name: agiflow-complete
 description: Mark task as complete and verify all criteria met.
-category: Agiflow
+category: Project Management
 tags: [agiflow, task, completion]
 ---
 

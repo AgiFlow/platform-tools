@@ -53,6 +53,7 @@ Use `create-task` MCP tool for each task with:
 - **dueDate**: ISO 8601 format if time-sensitive (optional)
 
 **DO NOT set workUnitId yet** - tasks are created standalone first.
+**Create each task with the right order** - Create task which is the dependency and prerequisite for other tasks first.
 
 ## 5. Identify Related Task Groups
 
@@ -94,20 +95,12 @@ For each identified task group:
    - **estimatedEffort**: Estimated hours for one session (2-4 hours typical)
    - **targetDate**: ISO 8601 format if time-sensitive (optional)
    - **devInfo**: Optional execution plan (e.g., `{ executionPlan: "Backend API → Frontend UI → Tests" }`)
+   - **taskIds**: List of task's id belong to work unit.
 
-2. Note the work unit ID
-
-## 7. Associate Tasks with Work Units
-
-For each task that belongs to a work unit:
-
-Use `update-task` MCP tool with:
-- **id**: Task ID (REQUIRED)
-- **workUnitId**: Work unit ID to associate the task with
-
+** Note **: Leave unrelated or standalone tasks without a workUnitId (they remain as standalone tasks).
 Leave unrelated or standalone tasks without a workUnitId (they remain as standalone tasks).
 
-## 8. Verify Plan
+## 7. Verify Plan
 
 1. Use `list-work-units` to verify work units were created correctly
 2. Use `list-tasks` with `workUnitId` filter to verify tasks are properly associated

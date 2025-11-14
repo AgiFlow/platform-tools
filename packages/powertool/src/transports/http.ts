@@ -182,7 +182,10 @@ export class HttpTransportHandler implements IHttpTransportHandler {
 
     if (sessionId && this.sessionManager.hasSession(sessionId)) {
       // Reuse existing transport
-      const session = this.sessionManager.getSession(sessionId)!;
+      const session = this.sessionManager.getSession(sessionId);
+      if (!session) {
+        throw new Error(`Session ${sessionId} not found`);
+      }
       transport = session.transport;
     } else if (!sessionId && isInitializeRequest(req.body)) {
       // New initialization request - create new server instance
@@ -241,7 +244,11 @@ export class HttpTransportHandler implements IHttpTransportHandler {
       return;
     }
 
-    const session = this.sessionManager.getSession(sessionId)!;
+    const session = this.sessionManager.getSession(sessionId);
+    if (!session) {
+      res.status(400).send('Session not found');
+      return;
+    }
     await session.transport.handleRequest(req, res);
   }
 
@@ -253,7 +260,11 @@ export class HttpTransportHandler implements IHttpTransportHandler {
       return;
     }
 
-    const session = this.sessionManager.getSession(sessionId)!;
+    const session = this.sessionManager.getSession(sessionId);
+    if (!session) {
+      res.status(400).send('Session not found');
+      return;
+    }
     await session.transport.handleRequest(req, res);
 
     // Clean up session

@@ -24,7 +24,7 @@ import { input } from '@inquirer/prompts';
 import { resolve } from 'node:path';
 import { cwd } from 'node:process';
 import chalk from 'chalk';
-import { createServer, createServerWithReload } from '../server';
+import { createServerWithReload } from '../server';
 import { StdioTransportHandler } from '../transports/stdio';
 import { HttpTransportHandler } from '../transports/http';
 import { SseTransportHandler } from '../transports/sse';
@@ -63,7 +63,14 @@ async function resolveProxyConfig(options: any) {
   const projectPath = resolve(cwd());
   const credentialsManager = new CredentialsManagerService();
 
-  // Method 1: Check environment variables
+  // Collect all configuration sources
+  const config: {
+    configUrl?: string;
+    configFilePath?: string;
+    configHeaders?: Record<string, string>;
+  } = {};
+
+  // Check environment variables for remote config
   // Priority: AGIFLOW_MCP_CONFIG_URL (reload context) > AGIFLOW_MCP_PROXY_ENDPOINT (default)
   const envEndpoint = process.env.AGIFLOW_MCP_CONFIG_URL || process.env.AGIFLOW_MCP_PROXY_ENDPOINT;
   const envApiKey = process.env.AGIFLOW_MCP_API_KEY;
@@ -72,21 +79,29 @@ async function resolveProxyConfig(options: any) {
     const source = process.env.AGIFLOW_MCP_CONFIG_URL
       ? 'AGIFLOW_MCP_CONFIG_URL'
       : 'AGIFLOW_MCP_PROXY_ENDPOINT';
-    console.error(chalk.blue(`Using configuration from environment variables (${source})`));
-    return {
-      configUrl: envEndpoint,
-      configHeaders: {
-        'x-api-key': `${envApiKey}`,
-      },
+    console.error(chalk.blue(`Using remote configuration from environment variables (${source})`));
+    config.configUrl = envEndpoint;
+    config.configHeaders = {
+      'x-api-key': `${envApiKey}`,
     };
   }
 
-  // Method 2: Check for config file path
+  // Check for config file path
   if (options.configFile) {
-    console.error(chalk.blue(`Using configuration from file: ${options.configFile}`));
-    return {
-      configFilePath: resolve(options.configFile),
-    };
+    console.error(chalk.blue(`Using local configuration from file: ${options.configFile}`));
+    config.configFilePath = resolve(options.configFile);
+  }
+
+  // If we have either remote or local config, return it
+  if (config.configUrl || config.configFilePath) {
+    if (config.configUrl && config.configFilePath) {
+      console.error(
+        chalk.blue(
+          `Merging remote and local configurations (strategy: ${options.mergeStrategy || 'local-priority'})`,
+        ),
+      );
+    }
+    return config;
   }
 
   // Method 3: Check saved credentials or prompt for authentication
@@ -159,6 +174,11 @@ export const mcpServeCommand = new Command('mcp-serve')
     false,
   )
   .option('-f, --config-file <path>', 'Path to local MCP configuration file')
+  .option(
+    '--merge-strategy <strategy>',
+    'Strategy for merging remote and local configs: local-priority, remote-priority, or merge-deep',
+    'local-priority',
+  )
   .action(async (options) => {
     try {
       const transportType = options.type.toLowerCase();
@@ -166,8 +186,9 @@ export const mcpServeCommand = new Command('mcp-serve')
       // Resolve configuration using three-tier approach
       const serverOptions: any = await resolveProxyConfig(options);
 
-      // Add prefix flag to server options
+      // Add prefix flag and merge strategy to server options
       serverOptions.useServerPrefix = options.useServerPrefix;
+      serverOptions.mergeStrategy = options.mergeStrategy;
 
       if (transportType === 'stdio') {
         const serverWithReload = await createServerWithReload(serverOptions);

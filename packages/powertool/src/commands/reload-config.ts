@@ -106,12 +106,16 @@ export const reloadConfigCommand = new Command('reload-config')
 
         if (result.connected.length > 0) {
           console.log(`\nConnected servers (${result.connected.length}):`);
-          result.connected.forEach((server) => console.log(`  ✓ ${server}`));
+          for (const server of result.connected) {
+            console.log(`  ✓ ${server}`);
+          }
         }
 
         if (result.failed.length > 0) {
           console.log(`\nFailed servers (${result.failed.length}):`);
-          result.failed.forEach((server) => console.log(`  ✗ ${server}`));
+          for (const server of result.failed) {
+            console.log(`  ✗ ${server}`);
+          }
         }
       } else {
         console.log(

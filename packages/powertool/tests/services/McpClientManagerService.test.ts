@@ -44,7 +44,7 @@ describe('McpClientManagerService', () => {
   });
 
   it('should throw error when connecting to already connected server', async () => {
-    const config: McpServerConfig = {
+    const _config: McpServerConfig = {
       transport: 'stdio',
       config: {
         command: 'echo',

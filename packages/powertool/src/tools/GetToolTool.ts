@@ -71,9 +71,7 @@ export class GetToolTool implements Tool<GetToolToolInput> {
 Call this tool with a tool name (and optionally server name if there are duplicates) to get:
 - Detailed tool description
 - Input schema with all parameters
-- Required vs optional parameters
-
-Example: get-tool({ toolName: "list-tasks", serverName: "agiflow-proxy" })`,
+- Required vs optional parameters`,
       inputSchema: {
         type: 'object',
         properties: {

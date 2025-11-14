@@ -341,8 +341,7 @@ agiflow-marketplace/
 │   ├── commands/
 │   │   ├── plan.md               # /agiflow-plan command
 │   │   ├── task.md               # /agiflow-task command
-│   │   ├── work.md               # /agiflow-work command
-│   │   └── complete.md           # /agiflow-complete command
+│   │   └── work.md               # /agiflow-work command
 │   ├── skills/
 │   │   └── project-management/
 │   │       ├── SKILL.md          # Skill definition

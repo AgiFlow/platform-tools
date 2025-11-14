@@ -44,8 +44,5 @@ export {
   type McpCredentials,
 } from './services/CredentialsManagerService.js';
 
-// Prompts - Add prompt exports here as you create them
-// Example: export { MyPrompt } from './prompts/MyPrompt.js';
-
 // Utils - Add utility exports here as you create them
 // Example: export { formatHelper } from './utils/formatHelper.js';

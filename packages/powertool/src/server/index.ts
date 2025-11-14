@@ -30,16 +30,6 @@ import {
 import { ConfigFetcherService } from '../services/ConfigFetcherService.js';
 import { McpClientManagerService } from '../services/McpClientManagerService.js';
 import { ReloadConfigTool } from '../tools/ReloadConfigTool.js';
-import {
-  CompletePrompt,
-  generateCompletePrompt,
-  PlanPrompt,
-  generatePlanPrompt,
-  TaskPrompt,
-  generateTaskPrompt,
-  WorkPrompt,
-  generateWorkPrompt,
-} from '../prompts/index.js';
 
 export interface ProxyServerOptions {
   configUrl?: string;
@@ -264,27 +254,6 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
   server.setRequestHandler(ListPromptsRequestSchema, async () => {
     const allPrompts: any[] = [];
 
-    // Add local prompts from kit package
-    allPrompts.push(
-      {
-        name: CompletePrompt.name,
-        description: CompletePrompt.description,
-      },
-      {
-        name: PlanPrompt.name,
-        description: PlanPrompt.description,
-      },
-      {
-        name: TaskPrompt.name,
-        description: TaskPrompt.description,
-      },
-      {
-        name: WorkPrompt.name,
-        description: WorkPrompt.description,
-        arguments: WorkPrompt.arguments,
-      },
-    );
-
     // Add prompts from all connected servers
     const clients = clientManager.getAllClients();
 
@@ -308,20 +277,6 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
   // Proxy prompt requests to the appropriate remote server
   server.setRequestHandler(GetPromptRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
-
-    // Check if it's a local prompt first
-    const localPrompts: Record<string, () => any> = {
-      [CompletePrompt.name]: generateCompletePrompt,
-      [PlanPrompt.name]: generatePlanPrompt,
-      [TaskPrompt.name]: generateTaskPrompt,
-      [WorkPrompt.name]: () => generateWorkPrompt(args),
-    };
-
-    if (localPrompts[name]) {
-      return {
-        messages: localPrompts[name](),
-      };
-    }
 
     if (useServerPrefix) {
       // Parse server name and prompt name from format: "serverName/promptName"

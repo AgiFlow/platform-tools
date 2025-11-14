@@ -5,7 +5,7 @@ module.exports = {
       2,
       'always',
       [
-        'kit',
+        'powertool',
         'release', // Allow 'release' scope for nx release commits
       ],
     ],

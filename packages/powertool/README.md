@@ -1,6 +1,6 @@
 # @agiflowai/powertool
 
-AgiFlow MCP Proxy Server - A powerful MCP toolkit that fetches configurations from Agiflow and proxies tools, resources, and prompts from multiple MCP servers. Includes built-in prompts for project management workflows.
+AgiFlow MCP Proxy Server - A powerful MCP toolkit that fetches configurations from Agiflow and proxies tools, resources, and prompts from multiple MCP servers.
 
 ## Features
 
@@ -12,13 +12,6 @@ AgiFlow MCP Proxy Server - A powerful MCP toolkit that fetches configurations fr
 - **Prompt Forwarding**: Forward prompt requests to the appropriate remote servers
 - **Connection Management**: Automatic connection pooling and lifecycle management
 - **Flexible Transports**: Support for stdio, HTTP, and SSE transports
-
-### Built-in Prompts
-- **Plan Prompt**: Break down project requirements into tasks and work units
-- **Task Prompt**: Implement single tasks with progress tracking and validation
-- **Work Prompt**: Execute work units (features/epics) with multiple tasks
-- **Complete Prompt**: Complete tasks with automated validation checks
-- **Template Service**: LiquidJS-based template rendering with 14 custom filters
 
 ## Installation
 
@@ -204,45 +197,6 @@ _Note: Run `npx @agiflowai/powertool mcp-serve` once in your project directory t
 }
 ```
 
-## Built-in Prompts
-
-The powertool package includes built-in prompts for project management workflows:
-
-### Available Prompts
-
-- **PlanPrompt**: Break down project requirements into tasks and work units
-- **TaskPrompt**: Implement single tasks with progress tracking
-- **WorkPrompt**: Execute work units (features/epics) with multiple tasks
-- **CompletePrompt**: Complete tasks with automated validation
-
-### Template Service
-
-Prompts use LiquidJS template engine with 14 custom filters:
-
-```typescript
-import { TemplateService } from '@agiflowai/powertool';
-
-const templateService = new TemplateService();
-const rendered = templateService.renderString(template, variables);
-```
-
-**Available Filters:**
-- Case transformations: `camelCase`, `pascalCase`, `kebabCase`, `snakeCase`, `upperCase`
-- String operations: `pluralize`, `singularize`, `strip`, `lower`, `upper`
-- Alias: `titleCase` (same as `pascalCase`)
-
-### Using Prompts Programmatically
-
-```typescript
-import { generatePlanPrompt, generateTaskPrompt } from '@agiflowai/powertool';
-
-// Generate plan prompt
-const planMessages = generatePlanPrompt();
-
-// Generate task prompt with variables
-const taskMessages = generateTaskPrompt({ taskId: 'task-123' });
-```
-
 ## Development
 
 ```bash
@@ -273,13 +227,6 @@ pnpm lint:fix
 4. **Namespacing**: Prefixes tool/prompt names and resource URIs with server names to avoid conflicts
 5. **Aggregation**: Combines results from all servers into a single response
 
-### Prompt Rendering Flow
-
-1. **Template Loading**: Markdown templates loaded with Vite `?raw` import
-2. **Variable Injection**: Variables (including agiflow-agents.md documentation) injected
-3. **LiquidJS Rendering**: Templates rendered with custom filters
-4. **Message Generation**: Rendered text returned as MCP message array
-
 ### Tool Naming
 
 Tools are automatically namespaced: `serverName/toolName`
@@ -305,7 +252,6 @@ Example: `code-review/review-pr`
 - **ConfigFetcherService**: Fetches and caches remote MCP configurations from Agiflow
 - **McpClientManagerService**: Manages connections to remote MCP servers
 - **CredentialsManagerService**: Manages OAuth flow and credential persistence
-- **TemplateService**: LiquidJS template rendering with custom filters
 - **LockfileService**: Manages project-specific configuration locks
 
 ### Server Components
@@ -313,13 +259,6 @@ Example: `code-review/review-pr`
 - **Proxy Server**: Aggregates and forwards requests to remote servers
 - **Transport Handlers**: Support for stdio, HTTP, and SSE transports
 - **OAuth Callback Server**: Handles OAuth authentication flow
-
-### Prompts
-
-- **PlanPrompt**: Project planning with task/work unit creation
-- **TaskPrompt**: Single task implementation workflow
-- **WorkPrompt**: Work unit (feature/epic) execution
-- **CompletePrompt**: Task completion validation
 
 ### Tools
 
@@ -339,23 +278,12 @@ packages/powertool/
 │   │   ├── ConfigFetcherService.ts
 │   │   ├── McpClientManagerService.ts
 │   │   ├── CredentialsManagerService.ts
-│   │   ├── TemplateService.ts
 │   │   ├── LockfileService.ts
 │   │   ├── McpOAuthClientProvider.ts
 │   │   └── OAuthCallbackServer.ts
-│   ├── prompts/                  # TypeScript prompt exports
-│   │   ├── PlanPrompt.ts
-│   │   ├── TaskPrompt.ts
-│   │   ├── WorkPrompt.ts
-│   │   └── CompletePrompt.ts
-│   ├── instructions/             # Template files
-│   │   ├── prompts/             # Markdown templates
-│   │   │   ├── plan.md
-│   │   │   ├── task.md
-│   │   │   ├── work.md
-│   │   │   └── complete.md
-│   │   └── agents/              # Reference documentation
-│   │       └── agiflow-agents.md # 726 lines, 25+ MCP tools
+│   ├── instructions/             # Reference documentation
+│   │   └── agents/
+│   │       └── agiflow-agents.md # MCP tools reference
 │   ├── tools/                    # MCP tools
 │   │   └── ReloadConfigTool.ts
 │   ├── transports/               # Transport handlers

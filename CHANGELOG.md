@@ -1,3 +1,13 @@
+## 0.1.5 (2025-11-14)
+
+### 🔥 Performance
+
+- **powertool:** Optimize MCP server operations with parallel loading ([9fd32f8](https://github.com/AgiFlow/platform-tools/commit/9fd32f8))
+
+### ❤️ Thank You
+
+- Vuong Ngo
+
 ## 0.1.4 (2025-11-14)
 
 ### 🚀 Features

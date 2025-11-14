@@ -211,18 +211,23 @@ export const useToolCommand = new Command('use-tool')
       }
 
       // Search all servers for the tool
-      for (const client of clients) {
-        try {
-          const tools = await client.listTools();
-          const hasTool = tools.some((t) => t.name === toolName);
+      const results = await Promise.all(
+        clients.map(async (client) => {
+          try {
+            const tools = await client.listTools();
+            const hasTool = tools.some((t) => t.name === toolName);
 
-          if (hasTool) {
-            matchingServers.push(client.serverName);
+            if (hasTool) {
+              return client.serverName;
+            }
+          } catch (error) {
+            console.error(chalk.red(`Failed to list tools from ${client.serverName}:`), error);
           }
-        } catch (error) {
-          console.error(chalk.red(`Failed to list tools from ${client.serverName}:`), error);
-        }
-      }
+          return null;
+        }),
+      );
+
+      matchingServers.push(...results.filter((r) => r !== null));
 
       if (matchingServers.length === 0) {
         console.error(chalk.red(`Tool "${toolName}" not found on any connected server`));

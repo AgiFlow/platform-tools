@@ -162,19 +162,23 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
     // Add tools from all connected servers
     const clients = clientManager.getAllClients();
 
-    for (const client of clients) {
-      try {
-        const tools = await client.listTools();
-        // Conditionally prefix tool names with server name
-        const processedTools = tools.map((tool) => ({
-          ...tool,
-          name: useServerPrefix ? `${client.serverName}/${tool.name}` : tool.name,
-        }));
-        allTools.push(...processedTools);
-      } catch (error) {
-        console.error(`Failed to list tools from ${client.serverName}:`, error);
-      }
-    }
+    const toolsResults = await Promise.all(
+      clients.map(async (client) => {
+        try {
+          const tools = await client.listTools();
+          // Conditionally prefix tool names with server name
+          return tools.map((tool) => ({
+            ...tool,
+            name: useServerPrefix ? `${client.serverName}/${tool.name}` : tool.name,
+          }));
+        } catch (error) {
+          console.error(`Failed to list tools from ${client.serverName}:`, error);
+          return [];
+        }
+      }),
+    );
+
+    allTools.push(...toolsResults.flat());
 
     return { tools: allTools };
   });
@@ -244,19 +248,23 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
     const allResources: any[] = [];
     const clients = clientManager.getAllClients();
 
-    for (const client of clients) {
-      try {
-        const resources = await client.listResources();
-        // Conditionally prefix resource URIs with server name
-        const processedResources = resources.map((resource) => ({
-          ...resource,
-          uri: useServerPrefix ? `${client.serverName}://${resource.uri}` : resource.uri,
-        }));
-        allResources.push(...processedResources);
-      } catch (error) {
-        console.error(`Failed to list resources from ${client.serverName}:`, error);
-      }
-    }
+    const resourcesResults = await Promise.all(
+      clients.map(async (client) => {
+        try {
+          const resources = await client.listResources();
+          // Conditionally prefix resource URIs with server name
+          return resources.map((resource) => ({
+            ...resource,
+            uri: useServerPrefix ? `${client.serverName}://${resource.uri}` : resource.uri,
+          }));
+        } catch (error) {
+          console.error(`Failed to list resources from ${client.serverName}:`, error);
+          return [];
+        }
+      }),
+    );
+
+    allResources.push(...resourcesResults.flat());
 
     return { resources: allResources };
   });
@@ -313,19 +321,23 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
     // Add prompts from all connected servers
     const clients = clientManager.getAllClients();
 
-    for (const client of clients) {
-      try {
-        const prompts = await client.listPrompts();
-        // Conditionally prefix prompt names with server name
-        const processedPrompts = prompts.map((prompt) => ({
-          ...prompt,
-          name: useServerPrefix ? `${client.serverName}/${prompt.name}` : prompt.name,
-        }));
-        allPrompts.push(...processedPrompts);
-      } catch (error) {
-        console.error(`Failed to list prompts from ${client.serverName}:`, error);
-      }
-    }
+    const promptsResults = await Promise.all(
+      clients.map(async (client) => {
+        try {
+          const prompts = await client.listPrompts();
+          // Conditionally prefix prompt names with server name
+          return prompts.map((prompt) => ({
+            ...prompt,
+            name: useServerPrefix ? `${client.serverName}/${prompt.name}` : prompt.name,
+          }));
+        } catch (error) {
+          console.error(`Failed to list prompts from ${client.serverName}:`, error);
+          return [];
+        }
+      }),
+    );
+
+    allPrompts.push(...promptsResults.flat());
 
     return { prompts: allPrompts };
   });
@@ -435,28 +447,18 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
       const oldResources: any[] = [];
       const oldPrompts: any[] = [];
 
-      for (const client of oldClients) {
-        try {
-          const tools = await client.listTools();
+      await Promise.all(
+        oldClients.map(async (client) => {
+          const [tools, resources, prompts] = await Promise.all([
+            client.listTools().catch(() => []),
+            client.listResources().catch(() => []),
+            client.listPrompts().catch(() => []),
+          ]);
           oldTools.push(...tools);
-        } catch {
-          // Ignore errors, keep empty
-        }
-
-        try {
-          const resources = await client.listResources();
           oldResources.push(...resources);
-        } catch {
-          // Ignore errors, keep empty
-        }
-
-        try {
-          const prompts = await client.listPrompts();
           oldPrompts.push(...prompts);
-        } catch {
-          // Ignore errors, keep empty
-        }
-      }
+        }),
+      );
 
       // Stringify for comparison
       const oldToolsStr = JSON.stringify(oldTools.sort((a, b) => a.name?.localeCompare(b.name) || 0));
@@ -511,28 +513,18 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
       const newResources: any[] = [];
       const newPrompts: any[] = [];
 
-      for (const client of newClients) {
-        try {
-          const tools = await client.listTools();
+      await Promise.all(
+        newClients.map(async (client) => {
+          const [tools, resources, prompts] = await Promise.all([
+            client.listTools().catch(() => []),
+            client.listResources().catch(() => []),
+            client.listPrompts().catch(() => []),
+          ]);
           newTools.push(...tools);
-        } catch {
-          // Ignore errors, keep empty
-        }
-
-        try {
-          const resources = await client.listResources();
           newResources.push(...resources);
-        } catch {
-          // Ignore errors, keep empty
-        }
-
-        try {
-          const prompts = await client.listPrompts();
           newPrompts.push(...prompts);
-        } catch {
-          // Ignore errors, keep empty
-        }
-      }
+        }),
+      );
 
       // Stringify for comparison
       const newToolsStr = JSON.stringify(newTools.sort((a, b) => a.name?.localeCompare(b.name) || 0));

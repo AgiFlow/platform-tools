@@ -110,18 +110,23 @@ export class UseToolTool implements Tool<UseToolToolInput> {
       // Search all servers for the tool
       const matchingServers: string[] = [];
 
-      for (const client of clients) {
-        try {
-          const tools = await client.listTools();
-          const hasTool = tools.some((t) => t.name === toolName);
+      const results = await Promise.all(
+        clients.map(async (client) => {
+          try {
+            const tools = await client.listTools();
+            const hasTool = tools.some((t) => t.name === toolName);
 
-          if (hasTool) {
-            matchingServers.push(client.serverName);
+            if (hasTool) {
+              return client.serverName;
+            }
+          } catch (error) {
+            console.error(`Failed to list tools from ${client.serverName}:`, error);
           }
-        } catch (error) {
-          console.error(`Failed to list tools from ${client.serverName}:`, error);
-        }
-      }
+          return null;
+        }),
+      );
+
+      matchingServers.push(...results.filter((r) => r !== null));
 
       if (matchingServers.length === 0) {
         return {

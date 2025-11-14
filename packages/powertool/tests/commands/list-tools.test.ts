@@ -170,9 +170,7 @@ describe('ListToolsCommand', () => {
 
   describe('JSON Output', () => {
     it('should serialize tools to JSON format', () => {
-      const mockTools = [
-        { server: 'test-server', name: 'test-tool', description: 'Test tool' },
-      ];
+      const mockTools = [{ server: 'test-server', name: 'test-tool', description: 'Test tool' }];
 
       const jsonString = JSON.stringify(mockTools, null, 2);
       const parsed = JSON.parse(jsonString);

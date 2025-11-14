@@ -163,24 +163,27 @@ export const listToolsCommand = new Command('list-tools')
       const clients = clientManager.getAllClients();
       const allTools: any[] = [];
 
-      for (const client of clients) {
-        try {
-          if (options.server && client.serverName !== options.server) {
-            continue;
-          }
+      const toolsResults = await Promise.all(
+        clients.map(async (client) => {
+          try {
+            if (options.server && client.serverName !== options.server) {
+              return [];
+            }
 
-          const tools = await client.listTools();
-          for (const tool of tools) {
-            allTools.push({
+            const tools = await client.listTools();
+            return tools.map((tool) => ({
               server: client.serverName,
               name: tool.name,
               description: tool.description,
-            });
+            }));
+          } catch (error) {
+            console.error(chalk.red(`Failed to list tools from ${client.serverName}:`), error);
+            return [];
           }
-        } catch (error) {
-          console.error(chalk.red(`Failed to list tools from ${client.serverName}:`), error);
-        }
-      }
+        }),
+      );
+
+      allTools.push(...toolsResults.flat());
 
       // Output results
       if (options.json) {

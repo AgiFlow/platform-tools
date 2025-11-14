@@ -234,9 +234,7 @@ describe('Progressive MCP Workflow Integration', () => {
       const found = availableTools.includes(requestedTool);
       expect(found).toBe(false);
 
-      const suggestions = availableTools.filter((tool) =>
-        tool.toLowerCase().includes('create'),
-      );
+      const suggestions = availableTools.filter((tool) => tool.toLowerCase().includes('create'));
       expect(suggestions).toContain('create-task');
     });
 

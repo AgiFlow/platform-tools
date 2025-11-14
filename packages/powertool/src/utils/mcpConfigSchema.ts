@@ -76,6 +76,7 @@ const ClaudeCodeStdioServerSchema = z.object({
   args: z.array(z.string()).optional(),
   env: z.record(z.string(), z.string()).optional(),
   disabled: z.boolean().optional(),
+  instruction: z.string().optional(),
 });
 
 // HTTP/SSE server config
@@ -84,6 +85,7 @@ const ClaudeCodeHttpServerSchema = z.object({
   headers: z.record(z.string(), z.string()).optional(),
   type: z.enum(['http', 'sse']).optional(),
   disabled: z.boolean().optional(),
+  instruction: z.string().optional(),
 });
 
 // Union of all Claude Code server types
@@ -129,16 +131,19 @@ const McpSseConfigSchema = z.object({
 const McpServerConfigSchema = z.discriminatedUnion('transport', [
   z.object({
     name: z.string(),
+    instruction: z.string().optional(),
     transport: z.literal('stdio'),
     config: McpStdioConfigSchema,
   }),
   z.object({
     name: z.string(),
+    instruction: z.string().optional(),
     transport: z.literal('http'),
     config: McpHttpConfigSchema,
   }),
   z.object({
     name: z.string(),
+    instruction: z.string().optional(),
     transport: z.literal('sse'),
     config: McpSseConfigSchema,
   }),
@@ -183,6 +188,7 @@ export function transformClaudeCodeConfig(claudeConfig: ClaudeCodeMcpConfig): In
 
       transformedServers[serverName] = {
         name: serverName,
+        instruction: stdioConfig.instruction,
         transport: 'stdio' as const,
         config: {
           command: interpolatedCommand,
@@ -203,6 +209,7 @@ export function transformClaudeCodeConfig(claudeConfig: ClaudeCodeMcpConfig): In
 
       transformedServers[serverName] = {
         name: serverName,
+        instruction: httpConfig.instruction,
         transport,
         config: {
           url: interpolatedUrl,

@@ -194,6 +194,7 @@ The CLI will:
 - `-f, --config-file <path>` - Path to local MCP configuration JSON file
 - `--merge-strategy <strategy>` - Merge strategy when both remote and local configs are provided: `local-priority`, `remote-priority`, or `merge-deep` (default: `local-priority`)
 - `--use-server-prefix` - Prefix tools and resources with server name (e.g., `server/tool`)
+- `--progressive` - Enable progressive MCP tools (`get-tool` and `use-tool`) for tool discovery and execution
 
 ### Configuration Merging
 
@@ -314,6 +315,30 @@ pnpm typecheck
 pnpm lint
 pnpm lint:fix
 ```
+
+## Progressive MCP Usage
+
+When `--progressive` is enabled, powertool provides two meta-tools for progressive discovery of MCP tools:
+
+### `get-tool` - Discover Tool Information
+
+Query detailed information about any MCP tool before using it:
+- Tool description and documentation
+- Complete input schema with parameter types
+- Required vs optional parameters
+- Which server provides the tool
+
+### `use-tool` - Execute MCP Tools
+
+Execute any MCP tool from connected servers:
+- Automatically finds the correct server for a tool
+- Supports disambiguation when multiple servers provide the same tool
+- Forwards tool arguments to the underlying MCP server
+
+**Recommended Flow:**
+1. Call `get-tool` with `toolName` to see the tool's schema
+2. Call `use-tool` with `toolName` and `toolArgs` based on the discovered schema
+3. If multiple servers provide the same tool, specify `serverName` to disambiguate
 
 ## How It Works
 

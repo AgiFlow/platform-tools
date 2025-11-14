@@ -9,8 +9,10 @@ Agiflow development tools monorepo - includes Claude Code plugins, MCP toolkit, 
 #### [@agiflowai/powertool](./packages/powertool/)
 npm package providing:
 - **MCP Proxy Server**: Aggregates multiple MCP servers from Agiflow
-- **Built-in Prompts**: Project management workflows (plan, task, work, complete)
-- **Template Service**: LiquidJS rendering with 14 custom filters
+- **Progressive MCP Tools**: `get-tool` and `use-tool` for progressive tool discovery
+- **Configuration Merging**: Combine remote Agiflow configs with local configurations
+- **Multi-Transport Support**: stdio, HTTP, and SSE transports
+- **Dynamic Reloading**: Reload MCP configuration without restart
 
 ```bash
 npm install -g @agiflowai/powertool
@@ -22,10 +24,9 @@ npx @agiflowai/powertool mcp-serve
 
 #### [Agiflow Marketplace](./agiflow-marketplace/)
 Claude Code plugin marketplace with intelligent project management capabilities:
-- `/agiflow-plan` - Convert requirements into structured tasks and work units
-- `/agiflow-task` - Implement tasks with progress tracking and validation
-- `/agiflow-work` - Execute work units (features/epics) with multiple tasks
-- `/agiflow-complete` - Complete tasks with automated validation checks
+- `/project-management:plan` - Convert requirements into structured tasks and work units
+- `/project-management:task` - Implement tasks with progress tracking and validation
+- `/project-management:work` - Execute work units (features/epics) with multiple tasks
 
 ## Quick Start
 
@@ -67,21 +68,6 @@ pnpm dev              # Run in development mode
 pnpm build            # Build the package
 pnpm test             # Run tests
 pnpm typecheck        # Type check
-```
-
-#### Test Claude Code Plugin Locally
-
-```bash
-# From repository root
-cd agiflow-marketplace
-
-# Start Claude Code from parent directory
-cd ..
-claude
-
-# In Claude Code:
-/plugin marketplace add ./agiflow-marketplace
-/plugin install agiflow@agiflow-marketplace
 ```
 
 ## Repository Structure

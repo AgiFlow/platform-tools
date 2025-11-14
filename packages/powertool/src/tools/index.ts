@@ -6,3 +6,5 @@
  */
 
 export * from './ReloadConfigTool';
+export * from './GetToolTool';
+export * from './UseToolTool';

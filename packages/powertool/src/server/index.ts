@@ -30,6 +30,9 @@ import {
 import { ConfigFetcherService } from '../services/ConfigFetcherService.js';
 import { McpClientManagerService } from '../services/McpClientManagerService.js';
 import { ReloadConfigTool } from '../tools/ReloadConfigTool.js';
+import { GetToolTool } from '../tools/GetToolTool.js';
+import { UseToolTool } from '../tools/UseToolTool.js';
+import { saveErrorLog, formatError } from '../utils/errorLogger.js';
 
 export interface ProxyServerOptions {
   configUrl?: string;
@@ -43,6 +46,12 @@ export interface ProxyServerOptions {
    * - 'merge-deep': Deep merge both configs (local overrides on conflict)
    */
   mergeStrategy?: 'local-priority' | 'remote-priority' | 'merge-deep';
+  /**
+   * Enable progressive disclosure mode
+   * When true, exposes only getTool, useTool, and reload_config tools
+   * instead of listing all tools from all servers
+   */
+  progressive?: boolean;
 }
 
 export interface ProxyServerWithReload {
@@ -88,9 +97,12 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
 
   const clientManager = new McpClientManagerService();
   const useServerPrefix = options.useServerPrefix ?? true; // Default to true for backward compatibility
+  const progressive = options.progressive ?? false;
 
-  // Placeholder for reload tool (will be set after reload function is created)
+  // Placeholder for tools (will be set after reload function is created)
   let reloadTool: ReloadConfigTool | null = null;
+  let getToolTool: GetToolTool | null = null;
+  let useToolTool: UseToolTool | null = null;
 
   // Fetch configuration and connect to remote servers
   try {
@@ -108,17 +120,43 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
 
     await Promise.all(connectionPromises);
   } catch (error) {
-    console.error('Failed to fetch MCP configuration:', error);
-    throw error;
+    // Log error to tmp folder instead of throwing
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    try {
+      const logPath = saveErrorLog(errorObj, 'config-fetch');
+      console.error(`Failed to fetch MCP configuration: ${formatError(errorObj)}`);
+      console.error(`Error log saved to: ${logPath}`);
+      console.error('Server will start with no remote servers connected.');
+    } catch (logError) {
+      console.error('Failed to fetch MCP configuration:', error);
+      console.error('Failed to save error log:', logError);
+      console.error('Server will start with no remote servers connected.');
+    }
+    // Continue server initialization without remote servers
   }
 
   // List all tools from all connected servers
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     const allTools: any[] = [];
 
+    // In progressive mode, only expose getTool, useTool, and reload_config
+    if (progressive) {
+      if (reloadTool) {
+        allTools.push(await reloadTool.getDefinition());
+      }
+      if (getToolTool) {
+        allTools.push(await getToolTool.getDefinition());
+      }
+      if (useToolTool) {
+        allTools.push(await useToolTool.getDefinition());
+      }
+      return { tools: allTools };
+    }
+
+    // Standard mode: list all tools from all servers
     // Add reload_config tool if available
     if (reloadTool) {
-      allTools.push(reloadTool.getDefinition());
+      allTools.push(await reloadTool.getDefinition());
     }
 
     // Add tools from all connected servers
@@ -148,6 +186,16 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
     // Handle reload_config tool
     if (name === ReloadConfigTool.TOOL_NAME && reloadTool) {
       return await reloadTool.execute(args as any);
+    }
+
+    // Handle progressive mode tools
+    if (progressive) {
+      if (name === GetToolTool.TOOL_NAME && getToolTool) {
+        return await getToolTool.execute(args as any);
+      }
+      if (name === UseToolTool.TOOL_NAME && useToolTool) {
+        return await useToolTool.execute(args as any);
+      }
     }
 
     if (useServerPrefix) {
@@ -568,6 +616,12 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
 
   // Instantiate the reload tool with the reload function
   reloadTool = new ReloadConfigTool(reload);
+
+  // Instantiate progressive mode tools if enabled
+  if (progressive) {
+    getToolTool = new GetToolTool(clientManager, useServerPrefix);
+    useToolTool = new UseToolTool(clientManager, useServerPrefix);
+  }
 
   return { server, reload };
 }

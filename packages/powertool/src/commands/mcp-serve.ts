@@ -179,6 +179,11 @@ export const mcpServeCommand = new Command('mcp-serve')
     'Strategy for merging remote and local configs: local-priority, remote-priority, or merge-deep',
     'local-priority',
   )
+  .option(
+    '--progressive',
+    'Enable progressive disclosure mode - expose only getTool, useTool, and reload_config instead of all tools',
+    false,
+  )
   .action(async (options) => {
     try {
       const transportType = options.type.toLowerCase();
@@ -186,9 +191,10 @@ export const mcpServeCommand = new Command('mcp-serve')
       // Resolve configuration using three-tier approach
       const serverOptions: any = await resolveProxyConfig(options);
 
-      // Add prefix flag and merge strategy to server options
+      // Add prefix flag, merge strategy, and progressive mode to server options
       serverOptions.useServerPrefix = options.useServerPrefix;
       serverOptions.mergeStrategy = options.mergeStrategy;
+      serverOptions.progressive = options.progressive;
 
       if (transportType === 'stdio') {
         const serverWithReload = await createServerWithReload(serverOptions);

@@ -1,7 +1,7 @@
 {
   "name": "@agiflowai/powertool",
   "description": "AgiFlow MCP toolkit server with tools and utilities",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "SEE LICENSE IN LICENSE.md",
   "keywords": [
     "mcp",

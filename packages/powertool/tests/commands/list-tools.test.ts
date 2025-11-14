@@ -29,7 +29,9 @@ describe('ListToolsCommand', () => {
 
   it('should have correct metadata', () => {
     expect(listToolsCommand.name()).toBe('list-tools');
-    expect(listToolsCommand.description()).toBe('List all available MCP tools from connected servers with optional filtering');
+    expect(listToolsCommand.description()).toBe(
+      'List all available MCP tools from connected servers with optional filtering',
+    );
   });
 
   it('should have correct options', () => {

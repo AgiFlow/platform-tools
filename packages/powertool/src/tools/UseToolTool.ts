@@ -61,7 +61,8 @@ export class UseToolTool implements Tool<UseToolToolInput> {
           },
           serverName: {
             type: 'string',
-            description: 'Optional server name to disambiguate when multiple servers have the same tool',
+            description:
+              'Optional server name to disambiguate when multiple servers have the same tool',
           },
         },
         required: ['toolName'],
@@ -83,7 +84,7 @@ export class UseToolTool implements Tool<UseToolToolInput> {
             content: [
               {
                 type: 'text',
-                text: `Server "${serverName}" not found. Available servers: ${clients.map(c => c.serverName).join(', ')}`,
+                text: `Server "${serverName}" not found. Available servers: ${clients.map((c) => c.serverName).join(', ')}`,
               },
             ],
             isError: true,
@@ -112,7 +113,7 @@ export class UseToolTool implements Tool<UseToolToolInput> {
       for (const client of clients) {
         try {
           const tools = await client.listTools();
-          const hasTool = tools.some(t => t.name === toolName);
+          const hasTool = tools.some((t) => t.name === toolName);
 
           if (hasTool) {
             matchingServers.push(client.serverName);

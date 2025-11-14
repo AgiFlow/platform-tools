@@ -44,13 +44,20 @@ import { exec } from 'node:child_process';
  */
 class McpClient implements McpClientConnection {
   serverName: string;
+  serverInstruction?: string;
   transport: McpServerTransportType;
   private client: Client;
   private childProcess?: ChildProcess;
   private connected: boolean = false;
 
-  constructor(serverName: string, transport: McpServerTransportType, client: Client) {
+  constructor(
+    serverName: string,
+    transport: McpServerTransportType,
+    client: Client,
+    instruction?: string,
+  ) {
     this.serverName = serverName;
+    this.serverInstruction = instruction;
     this.transport = transport;
     this.client = client;
   }
@@ -182,7 +189,7 @@ export class McpClientManagerService {
       },
     );
 
-    const mcpClient = new McpClient(serverName, config.transport, client);
+    const mcpClient = new McpClient(serverName, config.transport, client, config.instruction);
 
     try {
       if (config.transport === 'stdio') {
@@ -196,6 +203,21 @@ export class McpClientManagerService {
       }
 
       mcpClient.setConnected(true);
+
+      // Get server instruction from MCP server if config instruction is not provided
+      if (!mcpClient.serverInstruction) {
+        try {
+          // biome-ignore lint/complexity/useLiteralKeys: accessing private property intentionally
+          const serverInstruction = mcpClient['client'].getInstructions();
+          if (serverInstruction) {
+            mcpClient.serverInstruction = serverInstruction;
+          }
+        } catch (error) {
+          // Ignore errors when getting server instruction
+          console.error(`Failed to get server instruction from ${serverName}:`, error);
+        }
+      }
+
       this.clients.set(serverName, mcpClient);
     } catch (error) {
       await mcpClient.close();

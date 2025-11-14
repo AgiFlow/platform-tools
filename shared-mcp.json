@@ -2,6 +2,7 @@
   "mcpServers": {
     "dev-tools": {
       "command": "npx",
+      "instruction": "Use this to launch browser and interact with it",
       "args": ["-y", "chrome-devtools-mcp@latest"],
       "env": {}
     },

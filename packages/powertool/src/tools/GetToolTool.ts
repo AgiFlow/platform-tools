@@ -45,14 +45,20 @@ export class GetToolTool implements Tool<GetToolToolInput> {
       clients.map(async (client) => {
         try {
           const tools = await client.listTools();
-          const toolList = tools.map(t => `  - ${t.name}`).join('\n');
+          const toolList = tools.map((t) => `  - ${t.name}`).join('\n');
 
-          return `\n\n**Server: ${client.serverName}**\n- Transport: ${client.transport}\n- Available tools:${toolList ? '\n' + toolList : ''}`;
+          const instructionLine = client.serverInstruction
+            ? `\n- Description: ${client.serverInstruction}`
+            : '';
+          return `\n\n**Server: ${client.serverName}**${instructionLine}\n- Available tools:${toolList ? '\n' + toolList : ''}`;
         } catch (error) {
           console.error(`Failed to list tools from ${client.serverName}:`, error);
-          return `\n\n**Server: ${client.serverName}**\n- Transport: ${client.transport}\n`;
+          const instructionLine = client.serverInstruction
+            ? `\n- Description: ${client.serverInstruction}`
+            : '';
+          return `\n\n**Server: ${client.serverName}**${instructionLine}\n`;
         }
-      })
+      }),
     );
 
     return {
@@ -77,7 +83,8 @@ Example: get-tool({ toolName: "list-tasks", serverName: "agiflow-proxy" })`,
           },
           serverName: {
             type: 'string',
-            description: 'Optional server name to disambiguate when multiple servers have the same tool name',
+            description:
+              'Optional server name to disambiguate when multiple servers have the same tool name',
           },
         },
         required: ['toolName'],
@@ -99,7 +106,7 @@ Example: get-tool({ toolName: "list-tasks", serverName: "agiflow-proxy" })`,
             content: [
               {
                 type: 'text',
-                text: `Server "${serverName}" not found. Available servers: ${clients.map(c => c.serverName).join(', ')}`,
+                text: `Server "${serverName}" not found. Available servers: ${clients.map((c) => c.serverName).join(', ')}`,
               },
             ],
             isError: true,
@@ -107,14 +114,14 @@ Example: get-tool({ toolName: "list-tasks", serverName: "agiflow-proxy" })`,
         }
 
         const tools = await client.listTools();
-        const tool = tools.find(t => t.name === toolName);
+        const tool = tools.find((t) => t.name === toolName);
 
         if (!tool) {
           return {
             content: [
               {
                 type: 'text',
-                text: `Tool "${toolName}" not found on server "${serverName}". Available tools: ${tools.map(t => t.name).join(', ')}`,
+                text: `Tool "${toolName}" not found on server "${serverName}". Available tools: ${tools.map((t) => t.name).join(', ')}`,
               },
             ],
             isError: true,
@@ -125,14 +132,18 @@ Example: get-tool({ toolName: "list-tasks", serverName: "agiflow-proxy" })`,
           content: [
             {
               type: 'text',
-              text: JSON.stringify({
-                server: serverName,
-                tool: {
-                  name: tool.name,
-                  description: tool.description,
-                  inputSchema: tool.inputSchema,
+              text: JSON.stringify(
+                {
+                  server: serverName,
+                  tool: {
+                    name: tool.name,
+                    description: tool.description,
+                    inputSchema: tool.inputSchema,
+                  },
                 },
-              }, null, 2),
+                null,
+                2,
+              ),
             },
           ],
         };
@@ -144,7 +155,7 @@ Example: get-tool({ toolName: "list-tasks", serverName: "agiflow-proxy" })`,
       for (const client of clients) {
         try {
           const tools = await client.listTools();
-          const tool = tools.find(t => t.name === toolName);
+          const tool = tools.find((t) => t.name === toolName);
 
           if (tool) {
             matchingTools.push({
@@ -174,7 +185,7 @@ Example: get-tool({ toolName: "list-tasks", serverName: "agiflow-proxy" })`,
           content: [
             {
               type: 'text',
-              text: `Multiple servers provide tool "${toolName}". Please specify serverName:\n\n${matchingTools.map(m => `- Server: ${m.server}\n  Description: ${m.tool.description}`).join('\n\n')}`,
+              text: `Multiple servers provide tool "${toolName}". Please specify serverName:\n\n${matchingTools.map((m) => `- Server: ${m.server}\n  Description: ${m.tool.description}`).join('\n\n')}`,
             },
           ],
         };
@@ -186,14 +197,18 @@ Example: get-tool({ toolName: "list-tasks", serverName: "agiflow-proxy" })`,
         content: [
           {
             type: 'text',
-            text: JSON.stringify({
-              server: match.server,
-              tool: {
-                name: match.tool.name,
-                description: match.tool.description,
-                inputSchema: match.tool.inputSchema,
+            text: JSON.stringify(
+              {
+                server: match.server,
+                tool: {
+                  name: match.tool.name,
+                  description: match.tool.description,
+                  inputSchema: match.tool.inputSchema,
+                },
               },
-            }, null, 2),
+              null,
+              2,
+            ),
           },
         ],
       };

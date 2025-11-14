@@ -121,7 +121,11 @@ export const listToolsCommand = new Command('list-tools')
   .description('List all available MCP tools from connected servers with optional filtering')
   .option('-s, --server <name>', 'Filter by server name')
   .option('-f, --config-file <path>', 'Path to local MCP configuration file')
-  .option('--merge-strategy <strategy>', 'Strategy for merging remote and local configs', 'local-priority')
+  .option(
+    '--merge-strategy <strategy>',
+    'Strategy for merging remote and local configs',
+    'local-priority',
+  )
   .option('--json', 'Output as JSON', false)
   .action(async (options) => {
     try {
@@ -142,14 +146,16 @@ export const listToolsCommand = new Command('list-tools')
       const mcpConfig = await configFetcher.fetchConfiguration();
 
       // Connect to all configured MCP servers
-      const connectionPromises = Object.entries(mcpConfig.mcpServers).map(async ([name, serverConfig]) => {
-        try {
-          await clientManager.connectToServer(name, serverConfig);
-          console.error(chalk.gray(`Connected to MCP server: ${name}`));
-        } catch (error) {
-          console.error(chalk.red(`Failed to connect to MCP server ${name}:`), error);
-        }
-      });
+      const connectionPromises = Object.entries(mcpConfig.mcpServers).map(
+        async ([name, serverConfig]) => {
+          try {
+            await clientManager.connectToServer(name, serverConfig);
+            console.error(chalk.gray(`Connected to MCP server: ${name}`));
+          } catch (error) {
+            console.error(chalk.red(`Failed to connect to MCP server ${name}:`), error);
+          }
+        },
+      );
 
       await Promise.all(connectionPromises);
 

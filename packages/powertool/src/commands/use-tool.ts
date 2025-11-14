@@ -120,10 +120,17 @@ async function resolveProxyConfig(options: any) {
 export const useToolCommand = new Command('use-tool')
   .description('Execute an MCP tool with provided arguments')
   .argument('<toolName>', 'Name of the tool to execute')
-  .option('-s, --server <name>', 'Server name (optional, required if tool exists on multiple servers)')
+  .option(
+    '-s, --server <name>',
+    'Server name (optional, required if tool exists on multiple servers)',
+  )
   .option('-a, --args <json>', 'Tool arguments as JSON string', '{}')
   .option('-f, --config-file <path>', 'Path to local MCP configuration file')
-  .option('--merge-strategy <strategy>', 'Strategy for merging remote and local configs', 'local-priority')
+  .option(
+    '--merge-strategy <strategy>',
+    'Strategy for merging remote and local configs',
+    'local-priority',
+  )
   .action(async (toolName: string, options) => {
     try {
       // Parse tool arguments
@@ -152,14 +159,16 @@ export const useToolCommand = new Command('use-tool')
       const mcpConfig = await configFetcher.fetchConfiguration();
 
       // Connect to all configured MCP servers
-      const connectionPromises = Object.entries(mcpConfig.mcpServers).map(async ([name, serverConfig]) => {
-        try {
-          await clientManager.connectToServer(name, serverConfig);
-          console.error(chalk.gray(`Connected to MCP server: ${name}`));
-        } catch (error) {
-          console.error(chalk.red(`Failed to connect to MCP server ${name}:`), error);
-        }
-      });
+      const connectionPromises = Object.entries(mcpConfig.mcpServers).map(
+        async ([name, serverConfig]) => {
+          try {
+            await clientManager.connectToServer(name, serverConfig);
+            console.error(chalk.gray(`Connected to MCP server: ${name}`));
+          } catch (error) {
+            console.error(chalk.red(`Failed to connect to MCP server ${name}:`), error);
+          }
+        },
+      );
 
       await Promise.all(connectionPromises);
 
@@ -172,17 +181,19 @@ export const useToolCommand = new Command('use-tool')
         const client = clientManager.getClient(options.server);
         if (!client) {
           console.error(chalk.red(`Server "${options.server}" not found`));
-          console.error(chalk.gray(`Available servers: ${clients.map(c => c.serverName).join(', ')}`));
+          console.error(
+            chalk.gray(`Available servers: ${clients.map((c) => c.serverName).join(', ')}`),
+          );
           await clientManager.disconnectAll();
           process.exit(1);
         }
 
         const tools = await client.listTools();
-        const hasTool = tools.some(t => t.name === toolName);
+        const hasTool = tools.some((t) => t.name === toolName);
 
         if (!hasTool) {
           console.error(chalk.red(`Tool "${toolName}" not found on server "${options.server}"`));
-          console.error(chalk.gray(`Available tools: ${tools.map(t => t.name).join(', ')}`));
+          console.error(chalk.gray(`Available tools: ${tools.map((t) => t.name).join(', ')}`));
           await clientManager.disconnectAll();
           process.exit(1);
         }
@@ -203,7 +214,7 @@ export const useToolCommand = new Command('use-tool')
       for (const client of clients) {
         try {
           const tools = await client.listTools();
-          const hasTool = tools.some(t => t.name === toolName);
+          const hasTool = tools.some((t) => t.name === toolName);
 
           if (hasTool) {
             matchingServers.push(client.serverName);
@@ -220,7 +231,11 @@ export const useToolCommand = new Command('use-tool')
       }
 
       if (matchingServers.length > 1) {
-        console.error(chalk.yellow(`Multiple servers provide tool "${toolName}". Please specify --server option.`));
+        console.error(
+          chalk.yellow(
+            `Multiple servers provide tool "${toolName}". Please specify --server option.`,
+          ),
+        );
         console.error(chalk.gray(`Available servers: ${matchingServers.join(', ')}`));
         await clientManager.disconnectAll();
         process.exit(1);
@@ -231,7 +246,9 @@ export const useToolCommand = new Command('use-tool')
       const client = clientManager.getClient(targetServer);
 
       if (!client) {
-        console.error(chalk.red(`Internal error: Server "${targetServer}" was found but is not connected`));
+        console.error(
+          chalk.red(`Internal error: Server "${targetServer}" was found but is not connected`),
+        );
         await clientManager.disconnectAll();
         process.exit(1);
       }

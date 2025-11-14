@@ -120,9 +120,16 @@ async function resolveProxyConfig(options: any) {
 export const getToolCommand = new Command('get-tool')
   .description('Get detailed information about a specific MCP tool including schema and parameters')
   .argument('<toolName>', 'Name of the tool to get information about')
-  .option('-s, --server <name>', 'Server name (optional, required if tool exists on multiple servers)')
+  .option(
+    '-s, --server <name>',
+    'Server name (optional, required if tool exists on multiple servers)',
+  )
   .option('-f, --config-file <path>', 'Path to local MCP configuration file')
-  .option('--merge-strategy <strategy>', 'Strategy for merging remote and local configs', 'local-priority')
+  .option(
+    '--merge-strategy <strategy>',
+    'Strategy for merging remote and local configs',
+    'local-priority',
+  )
   .option('--json', 'Output as JSON', false)
   .action(async (toolName: string, options) => {
     try {
@@ -143,14 +150,16 @@ export const getToolCommand = new Command('get-tool')
       const mcpConfig = await configFetcher.fetchConfiguration();
 
       // Connect to all configured MCP servers
-      const connectionPromises = Object.entries(mcpConfig.mcpServers).map(async ([name, serverConfig]) => {
-        try {
-          await clientManager.connectToServer(name, serverConfig);
-          console.error(chalk.gray(`Connected to MCP server: ${name}`));
-        } catch (error) {
-          console.error(chalk.red(`Failed to connect to MCP server ${name}:`), error);
-        }
-      });
+      const connectionPromises = Object.entries(mcpConfig.mcpServers).map(
+        async ([name, serverConfig]) => {
+          try {
+            await clientManager.connectToServer(name, serverConfig);
+            console.error(chalk.gray(`Connected to MCP server: ${name}`));
+          } catch (error) {
+            console.error(chalk.red(`Failed to connect to MCP server ${name}:`), error);
+          }
+        },
+      );
 
       await Promise.all(connectionPromises);
 
@@ -161,31 +170,39 @@ export const getToolCommand = new Command('get-tool')
         const client = clientManager.getClient(options.server);
         if (!client) {
           console.error(chalk.red(`Server "${options.server}" not found`));
-          console.error(chalk.gray(`Available servers: ${clients.map(c => c.serverName).join(', ')}`));
+          console.error(
+            chalk.gray(`Available servers: ${clients.map((c) => c.serverName).join(', ')}`),
+          );
           await clientManager.disconnectAll();
           process.exit(1);
         }
 
         const tools = await client.listTools();
-        const tool = tools.find(t => t.name === toolName);
+        const tool = tools.find((t) => t.name === toolName);
 
         if (!tool) {
           console.error(chalk.red(`Tool "${toolName}" not found on server "${options.server}"`));
-          console.error(chalk.gray(`Available tools: ${tools.map(t => t.name).join(', ')}`));
+          console.error(chalk.gray(`Available tools: ${tools.map((t) => t.name).join(', ')}`));
           await clientManager.disconnectAll();
           process.exit(1);
         }
 
         // Output tool information
         if (options.json) {
-          console.log(JSON.stringify({
-            server: options.server,
-            tool: {
-              name: tool.name,
-              description: tool.description,
-              inputSchema: tool.inputSchema,
-            },
-          }, null, 2));
+          console.log(
+            JSON.stringify(
+              {
+                server: options.server,
+                tool: {
+                  name: tool.name,
+                  description: tool.description,
+                  inputSchema: tool.inputSchema,
+                },
+              },
+              null,
+              2,
+            ),
+          );
         } else {
           console.log(chalk.green(`\nTool: ${chalk.cyan(tool.name)}`));
           console.log(chalk.blue(`Server: ${options.server}`));
@@ -207,7 +224,7 @@ export const getToolCommand = new Command('get-tool')
       for (const client of clients) {
         try {
           const tools = await client.listTools();
-          const tool = tools.find(t => t.name === toolName);
+          const tool = tools.find((t) => t.name === toolName);
 
           if (tool) {
             matchingTools.push({
@@ -227,7 +244,11 @@ export const getToolCommand = new Command('get-tool')
       }
 
       if (matchingTools.length > 1) {
-        console.error(chalk.yellow(`Multiple servers provide tool "${toolName}". Please specify --server option.`));
+        console.error(
+          chalk.yellow(
+            `Multiple servers provide tool "${toolName}". Please specify --server option.`,
+          ),
+        );
         console.error(chalk.gray('\nMatching tools:'));
         for (const match of matchingTools) {
           console.error(chalk.cyan(`  - Server: ${match.server}`));
@@ -242,14 +263,20 @@ export const getToolCommand = new Command('get-tool')
 
       // Output tool information
       if (options.json) {
-        console.log(JSON.stringify({
-          server: match.server,
-          tool: {
-            name: match.tool.name,
-            description: match.tool.description,
-            inputSchema: match.tool.inputSchema,
-          },
-        }, null, 2));
+        console.log(
+          JSON.stringify(
+            {
+              server: match.server,
+              tool: {
+                name: match.tool.name,
+                description: match.tool.description,
+                inputSchema: match.tool.inputSchema,
+              },
+            },
+            null,
+            2,
+          ),
+        );
       } else {
         console.log(chalk.green(`\nTool: ${chalk.cyan(match.tool.name)}`));
         console.log(chalk.blue(`Server: ${match.server}`));

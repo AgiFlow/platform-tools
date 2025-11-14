@@ -93,6 +93,7 @@ export type McpServerTransportConfig = McpStdioConfig | McpHttpConfig | McpSseCo
 
 export interface McpServerConfig {
   name: string;
+  instruction?: string;
   transport: McpServerTransportType;
   config: McpServerTransportConfig;
 }
@@ -109,6 +110,7 @@ export interface RemoteMcpConfiguration {
  */
 export interface McpClientConnection {
   serverName: string;
+  serverInstruction?: string;
   transport: McpServerTransportType;
   listTools(): Promise<any[]>;
   listResources(): Promise<any[]>;

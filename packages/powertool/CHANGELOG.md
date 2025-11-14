@@ -1,3 +1,14 @@
+## 0.1.4 (2025-11-14)
+
+### 🚀 Features
+
+- **powertool:** mcpserver Display mcp-server instruction and provide override for workflow ([e4b9794](https://github.com/AgiFlow/platform-tools/commit/e4b9794))
+- **powertool:** progressive disclosure Add --progressive flag which enable progressive mcp tool use with get-tool and use-tool ([564f7a6](https://github.com/AgiFlow/platform-tools/commit/564f7a6))
+
+### ❤️ Thank You
+
+- Vuong Ngo
+
 ## 0.1.3 (2025-11-14)
 
 ### 🚀 Features

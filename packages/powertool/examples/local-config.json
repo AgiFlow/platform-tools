@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "local-filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+      "env": {}
+    },
+    "local-memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "custom-http-server": {
+      "url": "http://localhost:8080/mcp",
+      "type": "http",
+      "headers": {
+        "Authorization": "Bearer ${LOCAL_API_TOKEN}"
+      }
+    }
+  }
+}

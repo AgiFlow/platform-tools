@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "dev-tools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"],
+      "env": {}
+    },
+    "scaffold-mcp": {
+      "command": "npx",
+      "args": ["-y", "@agiflowai/scaffold-mcp", "mcp-serve"],
+      "env": {}
+    },
+    "architect-mcp": {
+      "command": "npx",
+      "args": ["-y", "@agiflowai/architect-mcp", "mcp-serve"],
+      "env": {}
+    }
+  }
+}

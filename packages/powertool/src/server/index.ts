@@ -36,6 +36,13 @@ export interface ProxyServerOptions {
   configFilePath?: string;
   configHeaders?: Record<string, string>;
   useServerPrefix?: boolean;
+  /**
+   * Strategy for merging remote and local configs when both are provided
+   * - 'local-priority': Local config overrides remote (default)
+   * - 'remote-priority': Remote config overrides local
+   * - 'merge-deep': Deep merge both configs (local overrides on conflict)
+   */
+  mergeStrategy?: 'local-priority' | 'remote-priority' | 'merge-deep';
 }
 
 export interface ProxyServerWithReload {
@@ -76,6 +83,7 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
     configUrl: options.configUrl,
     configFilePath: options.configFilePath,
     headers: options.configHeaders,
+    mergeStrategy: options.mergeStrategy,
   });
 
   const clientManager = new McpClientManagerService();

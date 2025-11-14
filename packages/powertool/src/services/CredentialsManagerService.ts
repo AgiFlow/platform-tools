@@ -70,7 +70,7 @@ export class CredentialsManagerService {
     try {
       const store = await this.loadCredentialsStore();
       return store[projectPath] || null;
-    } catch (error) {
+    } catch (_error) {
       // If file doesn't exist, return null
       return null;
     }
@@ -135,7 +135,7 @@ export class CredentialsManagerService {
     try {
       const content = await readFile(this.credentialsPath, 'utf-8');
       return JSON.parse(content) as CredentialsStore;
-    } catch (error) {
+    } catch (_error) {
       // If parsing fails, return empty store
       return {};
     }

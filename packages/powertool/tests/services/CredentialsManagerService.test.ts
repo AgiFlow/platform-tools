@@ -39,7 +39,7 @@ describe('CredentialsManagerService', () => {
     if (existsSync(credentialsPath)) {
       try {
         await unlink(credentialsPath);
-      } catch (error) {
+      } catch (_error) {
         // Ignore cleanup errors
       }
     }

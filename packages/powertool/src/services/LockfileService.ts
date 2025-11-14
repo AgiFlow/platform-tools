@@ -82,7 +82,7 @@ export class LockfileService {
     try {
       const content = await readFile(lockfilePath, 'utf-8');
       return JSON.parse(content) as LockfileData;
-    } catch (error) {
+    } catch (_error) {
       return null;
     }
   }
@@ -112,7 +112,7 @@ export class LockfileService {
     try {
       process.kill(lockData.pid, 0); // Doesn't kill, just checks if exists
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }
@@ -131,7 +131,7 @@ export class LockfileService {
 
       clearTimeout(timeout);
       return response.status === 200 || response.status === 202;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }

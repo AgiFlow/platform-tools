@@ -27,6 +27,13 @@ export interface ConfigFetcherOptions {
   configFilePath?: string;
   headers?: Record<string, string>;
   cacheTtlMs?: number;
+  /**
+   * Strategy for merging remote and local configs when both are provided
+   * - 'local-priority': Local config overrides remote (default)
+   * - 'remote-priority': Remote config overrides local
+   * - 'merge-deep': Deep merge both configs (local overrides on conflict)
+   */
+  mergeStrategy?: 'local-priority' | 'remote-priority' | 'merge-deep';
 }
 
 /**
@@ -42,12 +49,14 @@ export class ConfigFetcherService {
   private lastFetchTime: number = 0;
   private organizationId?: string;
   private baseUrl?: string;
+  private mergeStrategy: 'local-priority' | 'remote-priority' | 'merge-deep';
 
   constructor(options: ConfigFetcherOptions) {
     this.configUrl = options.configUrl;
     this.configFilePath = options.configFilePath;
     this.headers = options.headers || {};
     this.cacheTtlMs = options.cacheTtlMs || 60000; // Default 1 minute cache
+    this.mergeStrategy = options.mergeStrategy || 'local-priority'; // Default to local overrides remote
 
     // Fall back to environment variables if no configUrl or configFilePath provided
     // Priority: AGIFLOW_MCP_CONFIG_URL (reload context) > AGIFLOW_MCP_PROXY_ENDPOINT (default)
@@ -98,6 +107,7 @@ export class ConfigFetcherService {
 
   /**
    * Fetch MCP configuration from remote URL or local file with caching
+   * Supports merging both remote and local configurations based on mergeStrategy
    * @param context Optional context parameters (taskId, workUnitId, projectId) to fetch specific configurations
    */
   async fetchConfiguration(context?: {
@@ -114,9 +124,22 @@ export class ConfigFetcherService {
 
     let config: RemoteMcpConfiguration;
 
-    if (this.configFilePath) {
+    // Load configurations from available sources
+    const hasLocalConfig = !!this.configFilePath;
+    const hasRemoteConfig = !!this.configUrl;
+
+    if (hasLocalConfig && hasRemoteConfig) {
+      // Both sources available - merge them
+      const [localConfig, remoteConfig] = await Promise.all([
+        this.loadFromFile(),
+        this.loadFromUrl(context),
+      ]);
+      config = this.mergeConfigurations(localConfig, remoteConfig);
+    } else if (hasLocalConfig) {
+      // Only local config
       config = await this.loadFromFile();
-    } else if (this.configUrl) {
+    } else if (hasRemoteConfig) {
+      // Only remote config
       config = await this.loadFromUrl(context);
     } else {
       throw new Error('No configuration source available');
@@ -222,6 +245,90 @@ export class ConfigFetcherService {
         throw new Error(`Failed to fetch MCP configuration from URL: ${error.message}`);
       }
       throw new Error('Failed to fetch MCP configuration from URL: Unknown error');
+    }
+  }
+
+  /**
+   * Merge two MCP configurations based on the configured merge strategy
+   * @param localConfig Configuration loaded from local file
+   * @param remoteConfig Configuration loaded from remote URL
+   * @returns Merged configuration
+   */
+  private mergeConfigurations(
+    localConfig: RemoteMcpConfiguration,
+    remoteConfig: RemoteMcpConfiguration,
+  ): RemoteMcpConfiguration {
+    switch (this.mergeStrategy) {
+      case 'local-priority':
+        // Local servers override remote servers with the same name
+        return {
+          mcpServers: {
+            ...remoteConfig.mcpServers,
+            ...localConfig.mcpServers,
+          },
+        };
+
+      case 'remote-priority':
+        // Remote servers override local servers with the same name
+        return {
+          mcpServers: {
+            ...localConfig.mcpServers,
+            ...remoteConfig.mcpServers,
+          },
+        };
+
+      case 'merge-deep': {
+        // Deep merge: combine both, local overrides on conflict
+        const merged: Record<string, any> = { ...remoteConfig.mcpServers };
+
+        // Merge local servers, performing deep merge for servers with the same name
+        for (const [serverName, localServerConfig] of Object.entries(localConfig.mcpServers)) {
+          if (merged[serverName]) {
+            // Server exists in both - deep merge the config
+            const remoteServer = merged[serverName];
+            const mergedConfig: any = {
+              ...remoteServer.config,
+              ...localServerConfig.config,
+            };
+
+            // Deep merge nested objects like env, headers
+            const remoteEnv = 'env' in remoteServer.config ? remoteServer.config.env : undefined;
+            const localEnv =
+              'env' in localServerConfig.config ? localServerConfig.config.env : undefined;
+            if (remoteEnv || localEnv) {
+              mergedConfig.env = {
+                ...(remoteEnv || {}),
+                ...(localEnv || {}),
+              };
+            }
+
+            const remoteHeaders =
+              'headers' in remoteServer.config ? remoteServer.config.headers : undefined;
+            const localHeaders =
+              'headers' in localServerConfig.config ? localServerConfig.config.headers : undefined;
+            if (remoteHeaders || localHeaders) {
+              mergedConfig.headers = {
+                ...(remoteHeaders || {}),
+                ...(localHeaders || {}),
+              };
+            }
+
+            merged[serverName] = {
+              ...remoteServer,
+              ...localServerConfig,
+              config: mergedConfig,
+            };
+          } else {
+            // Server only in local - add it
+            merged[serverName] = localServerConfig;
+          }
+        }
+
+        return { mcpServers: merged };
+      }
+
+      default:
+        throw new Error(`Unknown merge strategy: ${this.mergeStrategy}`);
     }
   }
 

@@ -6,6 +6,8 @@ AgiFlow MCP Proxy Server - A powerful MCP toolkit that fetches configurations fr
 
 ### MCP Proxy Capabilities
 - **Remote Configuration**: Fetch MCP server configurations from Agiflow hosted at https://agiflow.io
+- **Local Configuration**: Use local JSON configuration files for MCP servers
+- **Configuration Merging**: Combine remote and local configs with flexible merge strategies
 - **Multi-Server Proxy**: Connect to and proxy multiple MCP servers (stdio, HTTP, SSE)
 - **Tool Aggregation**: Aggregate tools from all connected servers with automatic namespacing
 - **Resource Proxying**: Proxy resources from all connected servers
@@ -115,6 +117,58 @@ export AGIFLOW_MCP_API_KEY=your-api-key-here
 @agiflowai/powertool mcp-serve --config-file ./mcp-config.json --type http --port 3000
 ```
 
+#### Method 4: Merged Configuration (Local + Remote)
+
+You can combine both remote Agiflow configuration and local configuration files. This is useful when you want to:
+- Use Agiflow's hosted servers while adding your own local servers
+- Override specific server configurations from Agiflow
+- Test local servers alongside production remote servers
+
+```bash
+# Set remote config via environment variables and provide a local file
+export AGIFLOW_MCP_PROXY_ENDPOINT=https://agiflow.io/api/v1/projects/your-project-id/mcp/config
+export AGIFLOW_MCP_API_KEY=your-api-key-here
+@agiflowai/powertool mcp-serve --config-file ./local-mcp-config.json
+
+# Control merge behavior with --merge-strategy
+@agiflowai/powertool mcp-serve \
+  --config-file ./local-mcp-config.json \
+  --merge-strategy local-priority  # local overrides remote (default)
+
+# Or prioritize remote config
+@agiflowai/powertool mcp-serve \
+  --config-file ./local-mcp-config.json \
+  --merge-strategy remote-priority  # remote overrides local
+
+# Deep merge both configs
+@agiflowai/powertool mcp-serve \
+  --config-file ./local-mcp-config.json \
+  --merge-strategy merge-deep  # merge configs deeply
+```
+
+**Merge Strategies Explained:**
+
+1. **`local-priority` (default)**: Local servers completely replace remote servers with the same name
+   ```
+   Remote: { "server-a": {...remote...}, "server-b": {...} }
+   Local:  { "server-a": {...local...}, "server-c": {...} }
+   Result: { "server-a": {...local...}, "server-b": {...}, "server-c": {...} }
+   ```
+
+2. **`remote-priority`**: Remote servers completely replace local servers with the same name
+   ```
+   Remote: { "server-a": {...remote...}, "server-b": {...} }
+   Local:  { "server-a": {...local...}, "server-c": {...} }
+   Result: { "server-a": {...remote...}, "server-b": {...}, "server-c": {...} }
+   ```
+
+3. **`merge-deep`**: Deep merge server configs, local properties override remote on conflict
+   ```
+   Remote: { "server-a": { transport: "http", config: { url: "remote.com", headers: { "X-Remote": "1" } } } }
+   Local:  { "server-a": { config: { url: "localhost", headers: { "X-Local": "1" } } } }
+   Result: { "server-a": { transport: "http", config: { url: "localhost", headers: { "X-Remote": "1", "X-Local": "1" } } } }
+   ```
+
 #### Method 3: Interactive Authentication (Easiest for Development)
 
 Simply run the command without any configuration:
@@ -138,13 +192,57 @@ The CLI will:
 - `-p, --port <port>` - Port to listen on for HTTP/SSE (default: `3000`)
 - `--host <host>` - Host to bind to for HTTP/SSE (default: `localhost`)
 - `-f, --config-file <path>` - Path to local MCP configuration JSON file
+- `--merge-strategy <strategy>` - Merge strategy when both remote and local configs are provided: `local-priority`, `remote-priority`, or `merge-deep` (default: `local-priority`)
+- `--use-server-prefix` - Prefix tools and resources with server name (e.g., `server/tool`)
+
+### Configuration Merging
+
+When both remote (Agiflow) and local configuration sources are provided, powertool can merge them together. This enables powerful workflows like:
+
+- 🔧 **Development**: Use Agiflow production servers while testing local development servers
+- 🎯 **Override**: Override specific remote server configurations with local settings
+- 🔐 **Augment**: Add authentication headers or environment variables to remote servers
+- 🧪 **Testing**: Mix production and test servers in the same environment
+
+**Example: Combining Remote + Local Configs**
+
+```bash
+# Set up remote Agiflow configuration
+export AGIFLOW_MCP_PROXY_ENDPOINT=https://agiflow.io/api/v1/projects/your-project-id/mcp/config
+export AGIFLOW_MCP_API_KEY=your-api-key
+
+# Create local-config.json with additional servers
+cat > local-config.json << EOF
+{
+  "mcpServers": {
+    "local-filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+    },
+    "custom-server": {
+      "url": "http://localhost:8080/mcp",
+      "type": "http"
+    }
+  }
+}
+EOF
+
+# Start with merged configuration
+@agiflowai/powertool mcp-serve --config-file ./local-config.json
+```
+
+The result: **All remote Agiflow servers + local-filesystem + custom-server**
 
 ### Configuration Priority
 
-1. **Environment variables** (`AGIFLOW_MCP_PROXY_ENDPOINT` + `AGIFLOW_MCP_API_KEY`)
-2. **Config file** (via `--config-file` option)
-3. **Saved credentials** (`$HOME/.agiflow/mcp.credentials.json` - per project)
-4. **Interactive prompt** (if none of the above are available)
+Configuration sources are resolved in this order:
+
+1. **Environment variables** (`AGIFLOW_MCP_PROXY_ENDPOINT` + `AGIFLOW_MCP_API_KEY`) - Remote config
+2. **Config file** (via `--config-file` option) - Local config
+3. **Saved credentials** (`$HOME/.agiflow/mcp.credentials.json` - per project) - Remote config
+4. **Interactive prompt** (if none of the above are available) - Remote config
+
+**When both remote and local sources exist, they are merged according to `--merge-strategy`**
 
 ### Usage with Claude Code
 

@@ -35,11 +35,7 @@ import type {
 import { McpOAuthClientProvider } from './McpOAuthClientProvider.js';
 import { CredentialsManagerService } from './CredentialsManagerService.js';
 import { LockfileService } from './LockfileService.js';
-import {
-  createOAuthCallbackServer,
-  waitForAuthentication,
-  type OAuthCallbackServer,
-} from './OAuthCallbackServer.js';
+import { createOAuthCallbackServer, type OAuthCallbackServer } from './OAuthCallbackServer.js';
 import { unlinkSync } from 'node:fs';
 import { exec } from 'node:child_process';
 
@@ -157,11 +153,11 @@ export class McpClientManagerService {
           const serverConfig = { transport: client.transport };
           if (serverConfig.transport === 'http' || serverConfig.transport === 'sse') {
             // Clean up lockfile
-            const serverUrl = ''; // We don't have URL here, but lockfile will be cleaned by path
+            const _serverUrl = ''; // We don't have URL here, but lockfile will be cleaned by path
             // TODO: Store server URL for cleanup
           }
         }
-      } catch (error) {
+      } catch (_error) {
         // Ignore cleanup errors
       }
     }
@@ -214,6 +210,7 @@ export class McpClientManagerService {
       env: config.env,
     });
 
+    // biome-ignore lint/complexity/useLiteralKeys: accessing private property intentionally
     await mcpClient['client'].connect(transport);
   }
 
@@ -257,7 +254,7 @@ export class McpClientManagerService {
         try {
           const lockfilePath = this.lockfileService.getLockfilePath(serverUrlHash);
           unlinkSync(lockfilePath);
-        } catch (error) {
+        } catch (_error) {
           // Ignore
         }
       });
@@ -305,6 +302,7 @@ export class McpClientManagerService {
     });
 
     try {
+      // biome-ignore lint/complexity/useLiteralKeys: accessing private property intentionally
       await mcpClient['client'].connect(transport);
     } catch (error) {
       if (error instanceof UnauthorizedError && callbackServer && session) {
@@ -313,6 +311,7 @@ export class McpClientManagerService {
         await callbackServer.waitForAuthCode(session.sessionId);
 
         // Retry connection
+        // biome-ignore lint/complexity/useLiteralKeys: accessing private property intentionally
         await mcpClient['client'].connect(transport);
       } else {
         throw error;
@@ -361,7 +360,7 @@ export class McpClientManagerService {
         try {
           const lockfilePath = this.lockfileService.getLockfilePath(serverUrlHash);
           unlinkSync(lockfilePath);
-        } catch (error) {
+        } catch (_error) {
           // Ignore
         }
       });
@@ -404,6 +403,7 @@ export class McpClientManagerService {
     });
 
     try {
+      // biome-ignore lint/complexity/useLiteralKeys: accessing private property intentionally
       await mcpClient['client'].connect(transport);
     } catch (error) {
       if (error instanceof UnauthorizedError && callbackServer && session) {
@@ -412,6 +412,7 @@ export class McpClientManagerService {
         await callbackServer.waitForAuthCode(session.sessionId);
 
         // Retry connection
+        // biome-ignore lint/complexity/useLiteralKeys: accessing private property intentionally
         await mcpClient['client'].connect(transport);
       } else {
         throw error;

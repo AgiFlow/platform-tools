@@ -54,7 +54,7 @@ export class McpOAuthClientProvider implements OAuthClientProvider {
     this.credentialsManager = credentialsManager;
     this.projectPath = projectPath;
     this.callbackPort = callbackPort;
-    this._redirectUrl = `http://localhost:${callbackPort}/oauth/callback`;
+    this._redirectUrl = `http://localhost:${this.callbackPort}/oauth/callback`;
     this.onRedirectCallback = onRedirectCallback;
   }
 

@@ -438,7 +438,7 @@ export async function waitForAuthentication(
         // Error
         return false;
       }
-    } catch (error) {
+    } catch (_error) {
       // Connection failed, wait and retry
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }

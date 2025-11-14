@@ -1,3 +1,13 @@
+## 0.1.3 (2025-11-14)
+
+### 🚀 Features
+
+- **powertool:** configs resolution Merge remote agiflow configs and local configs together ([4f02f3b](https://github.com/AgiFlow/platform-tools/commit/4f02f3b))
+
+### ❤️ Thank You
+
+- Vuong Ngo
+
 ## 0.1.2 (2025-11-14)
 
 This was a version bump only for powertool to align it with other projects, there were no code changes.

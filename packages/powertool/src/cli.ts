@@ -21,7 +21,7 @@ import { Command } from 'commander';
 import { mcpServeCommand } from './commands/mcp-serve';
 import { reloadConfigCommand } from './commands/reload-config';
 import { listToolsCommand } from './commands/list-tools';
-import { getToolCommand } from './commands/get-tool';
+import { describeToolsCommand } from './commands/describe-tools';
 import { useToolCommand } from './commands/use-tool';
 import packageJson from '../package.json' assert { type: 'json' };
 
@@ -40,7 +40,7 @@ async function main() {
   program.addCommand(mcpServeCommand);
   program.addCommand(reloadConfigCommand);
   program.addCommand(listToolsCommand);
-  program.addCommand(getToolCommand);
+  program.addCommand(describeToolsCommand);
   program.addCommand(useToolCommand);
 
   // Parse arguments

@@ -1,5 +1,5 @@
 /**
- * GetTool Command
+ * DescribeTools Command
  *
  * DESIGN PATTERNS:
  * - Command pattern with Commander for CLI argument parsing
@@ -115,14 +115,14 @@ async function resolveProxyConfig(options: any) {
 }
 
 /**
- * Get detailed information about a specific MCP tool
+ * Get detailed information about multiple MCP tools
  */
-export const getToolCommand = new Command('get-tool')
-  .description('Get detailed information about a specific MCP tool including schema and parameters')
-  .argument('<toolName>', 'Name of the tool to get information about')
+export const describeToolsCommand = new Command('describe-tools')
+  .description('Get detailed information about multiple MCP tools including schemas and parameters')
+  .argument('<toolNames>', 'Comma-separated names of the tools to get information about')
   .option(
     '-s, --server <name>',
-    'Server name (optional, required if tool exists on multiple servers)',
+    'Server name (optional, searches within specific server if provided)',
   )
   .option('-f, --config-file <path>', 'Path to local MCP configuration file')
   .option(
@@ -131,8 +131,16 @@ export const getToolCommand = new Command('get-tool')
     'local-priority',
   )
   .option('--json', 'Output as JSON', false)
-  .action(async (toolName: string, options) => {
+  .action(async (toolNamesArg: string, options) => {
     try {
+      // Parse comma-separated tool names
+      const toolNames = toolNamesArg.split(',').map((name) => name.trim()).filter((name) => name.length > 0);
+
+      if (!toolNames || toolNames.length === 0) {
+        console.error(chalk.red('No tool names provided'));
+        process.exit(1);
+      }
+
       // Resolve configuration
       const config = await resolveProxyConfig(options);
 
@@ -178,10 +186,30 @@ export const getToolCommand = new Command('get-tool')
         }
 
         const tools = await client.listTools();
-        const tool = tools.find((t) => t.name === toolName);
+        const foundTools: any[] = [];
+        const notFoundTools: string[] = [];
 
-        if (!tool) {
-          console.error(chalk.red(`Tool "${toolName}" not found on server "${options.server}"`));
+        for (const toolName of toolNames) {
+          const tool = tools.find((t) => t.name === toolName);
+          if (tool) {
+            foundTools.push({
+              server: options.server,
+              tool: {
+                name: tool.name,
+                description: tool.description,
+                inputSchema: tool.inputSchema,
+              },
+            });
+          } else {
+            notFoundTools.push(toolName);
+          }
+        }
+
+        if (foundTools.length === 0) {
+          console.error(
+            chalk.red(`None of the requested tools found on server "${options.server}"`),
+          );
+          console.error(chalk.gray(`Requested: ${toolNames.join(', ')}`));
           console.error(chalk.gray(`Available tools: ${tools.map((t) => t.name).join(', ')}`));
           await clientManager.disconnectAll();
           process.exit(1);
@@ -189,28 +217,26 @@ export const getToolCommand = new Command('get-tool')
 
         // Output tool information
         if (options.json) {
-          console.log(
-            JSON.stringify(
-              {
-                server: options.server,
-                tool: {
-                  name: tool.name,
-                  description: tool.description,
-                  inputSchema: tool.inputSchema,
-                },
-              },
-              null,
-              2,
-            ),
-          );
+          const result: any = { tools: foundTools };
+          if (notFoundTools.length > 0) {
+            result.notFound = notFoundTools;
+          }
+          console.log(JSON.stringify(result, null, 2));
         } else {
-          console.log(chalk.green(`\nTool: ${chalk.cyan(tool.name)}`));
-          console.log(chalk.blue(`Server: ${options.server}`));
-          console.log(chalk.white(`\nDescription:`));
-          console.log(chalk.gray(`  ${tool.description}`));
-          console.log(chalk.white(`\nInput Schema:`));
-          console.log(chalk.gray(JSON.stringify(tool.inputSchema, null, 2)));
-          console.log();
+          console.log(chalk.green(`\nFound ${foundTools.length} tool(s):\n`));
+          for (const item of foundTools) {
+            console.log(chalk.cyan(`Tool: ${item.tool.name}`));
+            console.log(chalk.blue(`Server: ${item.server}`));
+            console.log(chalk.white(`Description:`));
+            console.log(chalk.gray(`  ${item.tool.description}`));
+            console.log(chalk.white(`Input Schema:`));
+            console.log(chalk.gray(JSON.stringify(item.tool.inputSchema, null, 2)));
+            console.log();
+          }
+
+          if (notFoundTools.length > 0) {
+            console.log(chalk.yellow(`Not found: ${notFoundTools.join(', ')}`));
+          }
         }
 
         await clientManager.disconnectAll();
@@ -218,78 +244,133 @@ export const getToolCommand = new Command('get-tool')
         return;
       }
 
-      // Search all servers for the tool
-      const matchingTools: Array<{ server: string; tool: any }> = [];
+      // Search all servers for the tools
+      const foundTools: any[] = [];
+      const notFoundTools: string[] = [...toolNames];
+      const ambiguousTools: Array<{ toolName: string; servers: string[] }> = [];
+
+      // Build a map of toolName -> array of { server, tool }
+      const toolMatches = new Map<string, Array<{ server: string; tool: any }>>();
 
       const results = await Promise.all(
         clients.map(async (client) => {
           try {
             const tools = await client.listTools();
-            const tool = tools.find((t) => t.name === toolName);
+            const matches: Array<{ toolName: string; server: string; tool: any }> = [];
 
-            if (tool) {
-              return {
-                server: client.serverName,
-                tool,
-              };
+            for (const toolName of toolNames) {
+              const tool = tools.find((t) => t.name === toolName);
+              if (tool) {
+                matches.push({ toolName, server: client.serverName, tool });
+              }
             }
+
+            return matches;
           } catch (error) {
             console.error(chalk.red(`Failed to list tools from ${client.serverName}:`), error);
+            return [];
           }
-          return null;
         }),
       );
 
-      matchingTools.push(...results.filter((r) => r !== null));
-
-      if (matchingTools.length === 0) {
-        console.error(chalk.red(`Tool "${toolName}" not found on any connected server`));
-        await clientManager.disconnectAll();
-        process.exit(1);
-      }
-
-      if (matchingTools.length > 1) {
-        console.error(
-          chalk.yellow(
-            `Multiple servers provide tool "${toolName}". Please specify --server option.`,
-          ),
-        );
-        console.error(chalk.gray('\nMatching tools:'));
-        for (const match of matchingTools) {
-          console.error(chalk.cyan(`  - Server: ${match.server}`));
-          console.error(chalk.gray(`    Description: ${match.tool.description}`));
+      // Flatten and organize results
+      for (const matches of results) {
+        for (const match of matches) {
+          if (!toolMatches.has(match.toolName)) {
+            toolMatches.set(match.toolName, []);
+          }
+          toolMatches.get(match.toolName)!.push({
+            server: match.server,
+            tool: match.tool,
+          });
         }
+      }
+
+      // Process each requested tool
+      for (const toolName of toolNames) {
+        const matches = toolMatches.get(toolName);
+
+        if (!matches || matches.length === 0) {
+          // Tool not found anywhere
+          continue;
+        }
+
+        if (matches.length === 1) {
+          // Single match - add to found tools
+          const match = matches[0];
+          foundTools.push({
+            server: match.server,
+            tool: {
+              name: match.tool.name,
+              description: match.tool.description,
+              inputSchema: match.tool.inputSchema,
+            },
+          });
+          // Remove from not found list
+          const idx = notFoundTools.indexOf(toolName);
+          if (idx > -1) {
+            notFoundTools.splice(idx, 1);
+          }
+        } else {
+          // Multiple matches - mark as ambiguous
+          ambiguousTools.push({
+            toolName,
+            servers: matches.map((m) => m.server),
+          });
+          // Remove from not found list
+          const idx = notFoundTools.indexOf(toolName);
+          if (idx > -1) {
+            notFoundTools.splice(idx, 1);
+          }
+        }
+      }
+
+      if (foundTools.length === 0 && ambiguousTools.length === 0) {
+        console.error(chalk.red('None of the requested tools found on any connected server'));
+        console.error(chalk.gray(`Requested: ${toolNames.join(', ')}`));
         await clientManager.disconnectAll();
         process.exit(1);
       }
 
-      // Single match found
-      const match = matchingTools[0];
-
-      // Output tool information
+      // Output results
       if (options.json) {
-        console.log(
-          JSON.stringify(
-            {
-              server: match.server,
-              tool: {
-                name: match.tool.name,
-                description: match.tool.description,
-                inputSchema: match.tool.inputSchema,
-              },
-            },
-            null,
-            2,
-          ),
-        );
+        const result: any = { tools: foundTools };
+        if (notFoundTools.length > 0) {
+          result.notFound = notFoundTools;
+        }
+        if (ambiguousTools.length > 0) {
+          result.ambiguous = ambiguousTools;
+        }
+        console.log(JSON.stringify(result, null, 2));
       } else {
-        console.log(chalk.green(`\nTool: ${chalk.cyan(match.tool.name)}`));
-        console.log(chalk.blue(`Server: ${match.server}`));
-        console.log(chalk.white(`\nDescription:`));
-        console.log(chalk.gray(`  ${match.tool.description}`));
-        console.log(chalk.white(`\nInput Schema:`));
-        console.log(chalk.gray(JSON.stringify(match.tool.inputSchema, null, 2)));
-        console.log();
+        if (foundTools.length > 0) {
+          console.log(chalk.green(`\nFound ${foundTools.length} tool(s):\n`));
+          for (const item of foundTools) {
+            console.log(chalk.cyan(`Tool: ${item.tool.name}`));
+            console.log(chalk.blue(`Server: ${item.server}`));
+            console.log(chalk.white(`Description:`));
+            console.log(chalk.gray(`  ${item.tool.description}`));
+            console.log(chalk.white(`Input Schema:`));
+            console.log(chalk.gray(JSON.stringify(item.tool.inputSchema, null, 2)));
+            console.log();
+          }
+        }
+
+        if (ambiguousTools.length > 0) {
+          console.log(
+            chalk.yellow(
+              `\nAmbiguous tools (found on multiple servers, use --server to specify):\n`,
+            ),
+          );
+          for (const item of ambiguousTools) {
+            console.log(chalk.cyan(`  ${item.toolName}: ${item.servers.join(', ')}`));
+          }
+          console.log();
+        }
+
+        if (notFoundTools.length > 0) {
+          console.log(chalk.red(`\nNot found: ${notFoundTools.join(', ')}\n`));
+        }
       }
 
       // Clean up

@@ -1,3 +1,13 @@
+## 0.1.6 (2025-11-15)
+
+### 🚀 Features
+
+- **powertool:** Replace get-tool with batch describe-tools command ([04b4958](https://github.com/AgiFlow/platform-tools/commit/04b4958))
+
+### ❤️ Thank You
+
+- Vuong Ngo
+
 ## 0.1.5 (2025-11-14)
 
 ### 🔥 Performance

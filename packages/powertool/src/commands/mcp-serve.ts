@@ -23,6 +23,7 @@ import { Command } from 'commander';
 import { input } from '@inquirer/prompts';
 import { resolve } from 'node:path';
 import { cwd } from 'node:process';
+import { tmpdir } from 'node:os';
 import chalk from 'chalk';
 import { createServerWithReload } from '../server';
 import { StdioTransportHandler } from '../transports/stdio';
@@ -42,6 +43,8 @@ async function startServer(handler: any) {
     console.error(`\nReceived ${signal}, shutting down gracefully...`);
     try {
       await handler.stop();
+      // Give cleanup handlers time to execute
+      await new Promise(resolve => setTimeout(resolve, 1500));
       process.exit(0);
     } catch (error) {
       console.error('Error during shutdown:', error);
@@ -184,6 +187,17 @@ export const mcpServeCommand = new Command('mcp-serve')
     'Enable progressive disclosure mode - expose only getTool, useTool, and reload_config instead of all tools',
     false,
   )
+  .option(
+    '--no-cache',
+    'Disable caching of MCP server data (tools, resources, prompts, instructions)',
+    false,
+  )
+  .option(
+    '--cache-ttl <seconds>',
+    'Cache time-to-live in seconds (default: 3600 = 1 hour)',
+    (val) => parseInt(val, 10),
+    3600,
+  )
   .action(async (options) => {
     try {
       const transportType = options.type.toLowerCase();
@@ -191,10 +205,24 @@ export const mcpServeCommand = new Command('mcp-serve')
       // Resolve configuration using three-tier approach
       const serverOptions: any = await resolveProxyConfig(options);
 
-      // Add prefix flag, merge strategy, and progressive mode to server options
+      // Add prefix flag, merge strategy, progressive mode, and cache options to server options
       serverOptions.useServerPrefix = options.useServerPrefix;
       serverOptions.mergeStrategy = options.mergeStrategy;
       serverOptions.progressive = options.progressive;
+      serverOptions.cache = {
+        enabled: options.cache !== false, // Commander's --no-cache sets options.cache to false
+        ttl: options.cacheTtl * 1000, // Convert seconds to milliseconds
+      };
+
+      if (serverOptions.cache.enabled) {
+        console.error(
+          chalk.blue(
+            `Cache enabled (TTL: ${options.cacheTtl}s, location: ${tmpdir()}/agiflow-powertool-cache)`,
+          ),
+        );
+      } else {
+        console.error(chalk.yellow('Cache disabled'));
+      }
 
       if (transportType === 'stdio') {
         const serverWithReload = await createServerWithReload(serverOptions);

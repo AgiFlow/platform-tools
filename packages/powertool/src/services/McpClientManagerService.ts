@@ -35,6 +35,7 @@ import type {
 import { McpOAuthClientProvider } from './McpOAuthClientProvider.js';
 import { CredentialsManagerService } from './CredentialsManagerService.js';
 import { LockfileService } from './LockfileService.js';
+import { CacheService, type McpServerCache } from './CacheService.js';
 import { createOAuthCallbackServer, type OAuthCallbackServer } from './OAuthCallbackServer.js';
 import { unlinkSync } from 'node:fs';
 import { exec } from 'node:child_process';
@@ -49,6 +50,7 @@ class McpClient implements McpClientConnection {
   private client: Client;
   private childProcess?: ChildProcess;
   private connected: boolean = false;
+  private cachedData?: McpServerCache;
 
   constructor(
     serverName: string,
@@ -131,25 +133,58 @@ export class McpClientManagerService {
   private clients: Map<string, McpClient> = new Map();
   private credentialsManager: CredentialsManagerService;
   private lockfileService: LockfileService;
+  private cacheService: CacheService;
   private projectPath: string;
   private oauthServers: Map<string, OAuthCallbackServer> = new Map();
+  private serverConfigs: Map<string, McpServerConfig> = new Map();
 
-  constructor(projectPath?: string) {
+  constructor(projectPath?: string, cacheOptions?: { enabled?: boolean; ttl?: number }) {
     this.credentialsManager = new CredentialsManagerService();
     this.lockfileService = new LockfileService();
+    this.cacheService = new CacheService(cacheOptions);
     this.projectPath = projectPath || process.cwd();
 
-    // Cleanup lockfiles on exit
+    // Cleanup resources on exit
     process.on('exit', () => {
-      this.cleanupLockfiles();
+      this.cleanupOnExit();
     });
     process.on('SIGINT', () => {
-      this.cleanupLockfiles();
+      this.cleanupOnExit();
+      process.exit(0);
+    });
+    process.on('SIGTERM', () => {
+      this.cleanupOnExit();
       process.exit(0);
     });
   }
 
-  private cleanupLockfiles(): void {
+  /**
+   * Cleanup all resources on exit (lockfiles, child processes, OAuth servers)
+   */
+  private cleanupOnExit(): void {
+    // Kill all stdio MCP server child processes
+    for (const [serverName, client] of this.clients) {
+      try {
+        // biome-ignore lint/complexity/useLiteralKeys: accessing private property intentionally
+        const childProcess = client['childProcess'];
+        if (childProcess && !childProcess.killed) {
+          console.error(`Killing stdio MCP server: ${serverName} (PID: ${childProcess.pid})`);
+          childProcess.kill('SIGTERM');
+
+          // Force kill after timeout if process doesn't exit
+          setTimeout(() => {
+            if (!childProcess.killed) {
+              console.error(`Force killing stdio MCP server: ${serverName} (PID: ${childProcess.pid})`);
+              childProcess.kill('SIGKILL');
+            }
+          }, 1000);
+        }
+      } catch (error) {
+        console.error(`Failed to kill child process for ${serverName}:`, error);
+      }
+    }
+
+    // Cleanup OAuth servers and lockfiles
     for (const [serverName, oauthServer] of this.oauthServers) {
       try {
         // Close the OAuth callback server
@@ -179,6 +214,62 @@ export class McpClientManagerService {
       throw new Error(`Client for ${serverName} is already connected`);
     }
 
+    // Store server config for cache operations
+    this.serverConfigs.set(serverName, config);
+
+    // Try to load from cache first
+    const cachedData = await this.cacheService.get(serverName, config);
+    if (cachedData) {
+      // Create a mock client with cached data
+      const client = new Client(
+        {
+          name: `@agiflowai/powertool-proxy-client`,
+          version: '0.1.0',
+        },
+        {
+          capabilities: {},
+        },
+      );
+
+      const mcpClient = new McpClient(
+        serverName,
+        config.transport,
+        client,
+        cachedData.instruction || config.instruction,
+      );
+
+      // Store cached capabilities for later retrieval
+      mcpClient['cachedData'] = cachedData;
+
+      try {
+        // Connect to the server normally
+        if (config.transport === 'stdio') {
+          await this.connectStdioClient(mcpClient, config.config as McpStdioConfig);
+        } else if (config.transport === 'http') {
+          await this.connectHttpClient(mcpClient, config.config as McpHttpConfig);
+        } else if (config.transport === 'sse') {
+          await this.connectSseClient(mcpClient, config.config as McpSseConfig);
+        } else {
+          throw new Error(`Unsupported transport type: ${config.transport}`);
+        }
+
+        mcpClient.setConnected(true);
+        this.clients.set(serverName, mcpClient);
+
+        // Refresh cache in the background
+        this.refreshCache(serverName, mcpClient, config).catch((error) => {
+          console.error(`Failed to refresh cache for ${serverName}:`, error);
+        });
+
+        return;
+      } catch (error) {
+        await mcpClient.close();
+        console.error(`Failed to connect using cached config for ${serverName}, trying fresh connection:`, error);
+        // Fall through to fresh connection
+      }
+    }
+
+    // Fresh connection (no cache or cache failed)
     const client = new Client(
       {
         name: `@agiflowai/powertool-proxy-client`,
@@ -219,10 +310,60 @@ export class McpClientManagerService {
       }
 
       this.clients.set(serverName, mcpClient);
+
+      // Cache server data in the background
+      this.cacheServerData(serverName, mcpClient, config).catch((error) => {
+        console.error(`Failed to cache data for ${serverName}:`, error);
+      });
     } catch (error) {
       await mcpClient.close();
       throw error;
     }
+  }
+
+  /**
+   * Cache server data (tools, resources, prompts, instruction)
+   */
+  private async cacheServerData(
+    serverName: string,
+    client: McpClient,
+    config: McpServerConfig,
+  ): Promise<void> {
+    // Skip if cache is disabled
+    if (!this.cacheService.isEnabled()) {
+      return;
+    }
+
+    try {
+      const [tools, resources, prompts] = await Promise.all([
+        client.listTools().catch(() => []),
+        client.listResources().catch(() => []),
+        client.listPrompts().catch(() => []),
+      ]);
+
+      const cacheData: McpServerCache = {
+        instruction: client.serverInstruction,
+        tools,
+        resources,
+        prompts,
+      };
+
+      await this.cacheService.set(serverName, config, cacheData);
+    } catch (error) {
+      console.error(`Failed to cache data for ${serverName}:`, error);
+    }
+  }
+
+  /**
+   * Refresh cache in the background
+   */
+  private async refreshCache(
+    serverName: string,
+    client: McpClient,
+    config: McpServerConfig,
+  ): Promise<void> {
+    // Same as cacheServerData but runs in background
+    await this.cacheServerData(serverName, client, config);
   }
 
   private async connectStdioClient(mcpClient: McpClient, config: McpStdioConfig): Promise<void> {
@@ -234,6 +375,13 @@ export class McpClientManagerService {
 
     // biome-ignore lint/complexity/useLiteralKeys: accessing private property intentionally
     await mcpClient['client'].connect(transport);
+
+    // Capture the child process from the transport for proper cleanup
+    // biome-ignore lint/complexity/useLiteralKeys: accessing private property intentionally
+    const childProcess = transport['_process'];
+    if (childProcess) {
+      mcpClient.setChildProcess(childProcess);
+    }
   }
 
   private async connectHttpClient(mcpClient: McpClient, config: McpHttpConfig): Promise<void> {

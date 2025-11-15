@@ -30,7 +30,7 @@ interface UseToolToolInput {
 }
 
 export class UseToolTool implements Tool<UseToolToolInput> {
-  static readonly TOOL_NAME = 'use-tool';
+  static readonly TOOL_NAME = 'use_tool';
   private clientManager: McpClientManagerService;
   private useServerPrefix: boolean;
 
@@ -42,11 +42,9 @@ export class UseToolTool implements Tool<UseToolToolInput> {
   getDefinition(): ToolDefinition {
     return {
       name: UseToolTool.TOOL_NAME,
-      description: `Execute an MCP tool with provided arguments. Use get-tool first to discover the tool's parameters and schema.
-**Important:**
-1. Call get-tool first to understand what arguments the tool needs
-2. Provide toolName and toolArgs based on the schema
-3. If multiple servers provide the same tool, specify serverName
+      description: `Execute an MCP tool with provided arguments. You MUST call describe_tools first to discover the tool's correct arguments. Then to use tool:
+- Provide toolName and toolArgs based on the schema
+- If multiple servers provide the same tool, specify serverName
 `,
       inputSchema: {
         type: 'object',
@@ -57,7 +55,7 @@ export class UseToolTool implements Tool<UseToolToolInput> {
           },
           toolArgs: {
             type: 'object',
-            description: 'Arguments to pass to the tool, as discovered from get-tool',
+            description: 'Arguments to pass to the tool, as discovered from describe_tools',
           },
           serverName: {
             type: 'string',
@@ -133,7 +131,7 @@ export class UseToolTool implements Tool<UseToolToolInput> {
           content: [
             {
               type: 'text',
-              text: `Tool "${toolName}" not found on any connected server. Use get-tool to see available tools.`,
+              text: `Tool "${toolName}" not found on any connected server. Use describe_tools to see available tools.`,
             },
           ],
           isError: true,

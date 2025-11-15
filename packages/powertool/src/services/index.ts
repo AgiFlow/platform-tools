@@ -6,3 +6,4 @@
  */
 
 export * from './ConfigFetcherService';
+export * from './CacheService';

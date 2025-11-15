@@ -30,7 +30,7 @@ import {
 import { ConfigFetcherService } from '../services/ConfigFetcherService.js';
 import { McpClientManagerService } from '../services/McpClientManagerService.js';
 import { ReloadConfigTool } from '../tools/ReloadConfigTool.js';
-import { GetToolTool } from '../tools/GetToolTool.js';
+import { DescribeTools } from '../tools/DescribeTools.js';
 import { UseToolTool } from '../tools/UseToolTool.js';
 import { saveErrorLog, formatError } from '../utils/errorLogger.js';
 
@@ -52,6 +52,13 @@ export interface ProxyServerOptions {
    * instead of listing all tools from all servers
    */
   progressive?: boolean;
+  /**
+   * Cache options for MCP server data
+   */
+  cache?: {
+    enabled?: boolean;
+    ttl?: number;
+  };
 }
 
 export interface ProxyServerWithReload {
@@ -95,13 +102,13 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
     mergeStrategy: options.mergeStrategy,
   });
 
-  const clientManager = new McpClientManagerService();
+  const clientManager = new McpClientManagerService(undefined, options.cache);
   const useServerPrefix = options.useServerPrefix ?? true; // Default to true for backward compatibility
   const progressive = options.progressive ?? false;
 
   // Placeholder for tools (will be set after reload function is created)
   let reloadTool: ReloadConfigTool | null = null;
-  let getToolTool: GetToolTool | null = null;
+  let describeTools: DescribeTools | null = null;
   let useToolTool: UseToolTool | null = null;
 
   // Fetch configuration and connect to remote servers
@@ -139,13 +146,13 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     const allTools: any[] = [];
 
-    // In progressive mode, only expose getTool, useTool, and reload_config
+    // In progressive mode, only expose describeTools, useTool, and reload_config
     if (progressive) {
       if (reloadTool) {
         allTools.push(await reloadTool.getDefinition());
       }
-      if (getToolTool) {
-        allTools.push(await getToolTool.getDefinition());
+      if (describeTools) {
+        allTools.push(await describeTools.getDefinition());
       }
       if (useToolTool) {
         allTools.push(await useToolTool.getDefinition());
@@ -194,8 +201,8 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
 
     // Handle progressive mode tools
     if (progressive) {
-      if (name === GetToolTool.TOOL_NAME && getToolTool) {
-        return await getToolTool.execute(args as any);
+      if (name === DescribeTools.TOOL_NAME && describeTools) {
+        return await describeTools.execute(args as any);
       }
       if (name === UseToolTool.TOOL_NAME && useToolTool) {
         return await useToolTool.execute(args as any);
@@ -611,7 +618,7 @@ export async function createServerWithReload(options: ProxyServerOptions): Promi
 
   // Instantiate progressive mode tools if enabled
   if (progressive) {
-    getToolTool = new GetToolTool(clientManager, useServerPrefix);
+    describeTools = new DescribeTools(clientManager, useServerPrefix);
     useToolTool = new UseToolTool(clientManager, useServerPrefix);
   }
 
